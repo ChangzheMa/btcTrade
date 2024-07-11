@@ -1,5 +1,7 @@
-const { Console } = require('console')
-const { WebsocketStream } = require('@binance/connector')
+import { Console } from 'console'
+import { SYMBOL } from './config.js';
+import { WebsocketStream } from '@binance/connector'
+
 const logger = new Console({ stdout: process.stdout, stderr: process.stderr })
 
 const callbacks = {
@@ -9,5 +11,4 @@ const callbacks = {
 }
 
 const websocketStreamClient = new WebsocketStream({ logger, callbacks })
-websocketStreamClient.ticker('btcfdusd')
-setTimeout(() => websocketStreamClient.disconnect(), 6000)
+websocketStreamClient.kline(SYMBOL, '1s')
