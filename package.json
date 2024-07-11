@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "npm install && tsc && node dist/index.js"
+  },
   "dependencies": {
     "@binance/connector": "^3.4.0",
     "@binance/connector-typescript": "^0.3.9"
