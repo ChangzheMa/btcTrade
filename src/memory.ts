@@ -3,6 +3,7 @@ import _ from 'lodash'
 let closeList: number[] = []  //每秒
 let bestAsk: string
 let bestBid: string
+let sign: -1|0|1
 
 const calSign = (close: number) => {
     const ma5 = _.mean(closeList.slice(-5))
@@ -16,17 +17,20 @@ const calSign = (close: number) => {
     const cond_up = close > ma5 && ma5 > ma10 && ma10 > ma20
     const cond_up_reverse = close > ma300 && ma300 > ma600
 
-    const sign = cond_down && !cond_down_reverse ? -1 : (cond_up && !cond_up_reverse ? 1 : 0)
-    switch (sign) {
-        case -1:
-            console.log("Sell: ", (parseFloat(bestAsk) + parseFloat(bestBid)) / 2)
-            break;
-        case 1:
-            console.log("Buy : ", (parseFloat(bestAsk) + parseFloat(bestBid)) / 2)
-            break;
-        case 0:
-            console.log("Mid : ", (parseFloat(bestAsk) + parseFloat(bestBid)) / 2)
-            break;
+    const newSign = cond_down && !cond_down_reverse ? -1 : (cond_up && !cond_up_reverse ? 1 : 0)
+    if (newSign !== sign) {
+        switch (newSign) {
+            case -1:
+                console.log("Sell: ", (parseFloat(bestAsk) + parseFloat(bestBid)) / 2)
+                break;
+            case 1:
+                console.log("Buy : ", (parseFloat(bestAsk) + parseFloat(bestBid)) / 2)
+                break;
+            case 0:
+                console.log("Mid : ", (parseFloat(bestAsk) + parseFloat(bestBid)) / 2)
+                break;
+        }
+        sign = newSign
     }
 }
 
