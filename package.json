@@ -1,6 +1,10 @@
 {
   "dependencies": {
-    "@binance/connector": "^3.4.0"
+    "@binance/connector": "^3.4.0",
+    "@binance/connector-typescript": "^0.3.9"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^20.14.10"
+  }
 }
