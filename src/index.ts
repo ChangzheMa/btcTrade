@@ -14,6 +14,7 @@ const callbacks = {
         if (obj['e'] === 'kline') {
             console.log("closePrice: ", obj['k']['c'], "klines delay: ", (new Date().valueOf() - obj['k']['T']))
             updateClose(parseFloat(obj['k']['c']))
+            console.log("calDelay: ", (new Date().valueOf() - obj['k']['T']))
         } else if (obj['a'] && obj['b']) {
             updateBestAskBid(obj['a'], obj['b'])
         }
