@@ -5,7 +5,6 @@ let bestBid: string
 export const updateClose = (closePrice: number) => {
     closeList.push(closePrice)
     closeList = closeList.slice(-900)
-    console.log("closePrice: ", closePrice)
 }
 
 /**
@@ -14,5 +13,4 @@ export const updateClose = (closePrice: number) => {
 export const updateBestAskBid = (ask: string, bid: string) => {
     bestAsk = ask
     bestBid = bid
-    console.log("askAndBid: ", ask, bid)
 }

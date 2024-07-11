@@ -12,7 +12,7 @@ const callbacks = {
     message: (data: string) => {
         const obj = JSON.parse(data);
         if (obj['e'] === 'kline') {
-            console.log("                             klines delay: ", (new Date().valueOf() - obj['k']['T']))
+            console.log("closePrice: ", obj['k']['c'], "klines delay: ", (new Date().valueOf() - obj['k']['T']))
             updateClose(parseFloat(obj['k']['c']))
         } else if (obj['a'] && obj['b']) {
             updateBestAskBid(obj['a'], obj['b'])
@@ -20,7 +20,6 @@ const callbacks = {
     }
 }
 
-// @ts-ignore
-const websocketStreamClient = new WebsocketStream({ logger, callbacks })
+const websocketStreamClient = new WebsocketStream({ callbacks })
 websocketStreamClient.kline(SYMBOL, Interval['1s'])
 websocketStreamClient.bookTicker(SYMBOL)
