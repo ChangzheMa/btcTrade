@@ -38,17 +38,18 @@ export const mockExActionTrade = (price: number) => {
 }
 
 // 下单（mount以元为单位）
-export const mockExSendOrder = (op: 'sell' | 'buy' | null, price: number, mount: number): boolean => {
+export const mockExSendOrder = (op: 'sell' | 'buy', price: number, mount: number): boolean => {
 
     const ask = parseFloat(bestAsk)
     const bid = parseFloat(bestBid)
     if ((op === 'sell' && price < bid) || (op === 'buy' && price > ask)) {
+        console.log(`【下单】 ask ${ask.toFixed(2)}, ~~~~ ${op.slice(0, 3)} ${price.toFixed(2)} ~~~~, bid ${bid.toFixed(2)}`)
         return false
     } else {
         currentOrderOp = op
         currentOrderPrice = price
         currentOrderMount = mount
-        // console.log(`【创建订单】 ${op} , ${price} , ${mount}`)
+        console.log(`【下单】 ask ${ask.toFixed(2)}, [[[[ ${op.slice(0, 3)} ${price.toFixed(2)} ]]]], bid ${bid.toFixed(2)}`)
         return true
     }
 }
