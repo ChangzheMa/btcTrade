@@ -30,7 +30,7 @@ export const mockExActionTrade = (price: number) => {
             filled = true
         }
         if (filled) {
-            console.log(`【成交了！】------------------------------------------------------ [${new Date().toISOString()}] ${(currentOrderOp + " ").slice(0,4)} , ${currentOrderPrice.toFixed(2)} , ${currentOrderMount.toFixed(4)} , 账户价值: ${(accountMoney + accountVolume * lastPrice).toFixed(4)}, 持仓: ${(accountVolume * lastPrice).toFixed(2)}`)
+            console.log(`【成交了！】--------------------------------------------------------------- [${new Date().toLocaleString()}] ${(currentOrderOp + " ").slice(0,4)} , ${currentOrderPrice.toFixed(2)} , ${currentOrderMount.toFixed(4)} , 账户价值: ${(accountMoney + accountVolume * lastPrice).toFixed(4)}, 持仓: ${(accountVolume * lastPrice).toFixed(2)}`)
             clearCurrentOrder()
         }
     }
@@ -43,13 +43,13 @@ export const mockExSendOrder = (op: 'sell' | 'buy', price: number, mount: number
     const ask = parseFloat(bestAsk)
     const bid = parseFloat(bestBid)
     if ((op === 'sell' && price < bid) || (op === 'buy' && price > ask)) {
-        console.log(`【下单】 ask ${ask.toFixed(2)}, ~~~~ ${op.slice(0, 3)} ${price.toFixed(2)} ~~~~, bid ${bid.toFixed(2)}`)
+        console.log(`[${new Date().toLocaleString()}]【下单】 ask ${ask.toFixed(2)}, ~~~~ ${op.slice(0, 3)} ${price.toFixed(2)} ~~~~, bid ${bid.toFixed(2)}`)
         return false
     } else {
         currentOrderOp = op
         currentOrderPrice = price
         currentOrderMount = mount
-        console.log(`【下单】 ask ${ask.toFixed(2)}, [[[[ ${op.slice(0, 3)} ${price.toFixed(2)} ]]]], bid ${bid.toFixed(2)}`)
+        console.log(`[${new Date().toLocaleString()}]【下单】 ask ${ask.toFixed(2)}, [[[[ ${op.slice(0, 3)} ${price.toFixed(2)} ]]]], bid ${bid.toFixed(2)}`)
         return true
     }
 }
