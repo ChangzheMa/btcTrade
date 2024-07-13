@@ -30,7 +30,7 @@ export const mockExActionTrade = (price: number) => {
             filled = true
         }
         if (filled) {
-            console.log(`【成交了！】                            ${currentOrderOp} , ${currentOrderPrice} , ${currentOrderMount} , 账户价值: ${accountMoney + accountVolume * lastPrice}, 持仓: ${accountVolume * lastPrice}`)
+            console.log(`【成交了！】------------------ [${new Date().toISOString()}] ${(currentOrderOp + " ").slice(0,4)} , ${currentOrderPrice.toFixed(2)} , ${currentOrderMount.toFixed(4)} , 账户价值: ${(accountMoney + accountVolume * lastPrice).toFixed(4)}, 持仓: ${(accountVolume * lastPrice).toFixed(2)}`)
             clearCurrentOrder()
         }
     }

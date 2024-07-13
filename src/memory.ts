@@ -2,28 +2,20 @@ import _ from 'lodash'
 
 import * as me from './mock/exchange.js';
 import { mockExClearOrder, mockExSendOrder } from './mock/exchange.js';
+import { ma3_ma7_and_delay1, ma3_ma7_and_delay1_always_hold, ma5_ma10_ma20_choice } from './strategy.js';
 
 let closeList: number[] = []  //每秒
 let bestAsk: string
 let bestBid: string
-let sign: -1|0|1
+let sign: number
 
-const calSign = (close: number) => {
-    const ma5 = _.mean(closeList.slice(-5))
-    const ma10 = _.mean(closeList.slice(-10))
-    const ma20 = _.mean(closeList.slice(-20))
-    const ma300 = _.mean(closeList.slice(-300))
-    const ma600 = _.mean(closeList.slice(-600))
-
-    const cond_down = close < ma5 && ma5 < ma10 && ma10 < ma20
-    const cond_down_reverse = close < ma300 && ma300 < ma600
-    const cond_up = close > ma5 && ma5 > ma10 && ma10 > ma20
-    const cond_up_reverse = close > ma300 && ma300 > ma600
-
-    const newSign = cond_down && !cond_down_reverse ? -1 : (cond_up && !cond_up_reverse ? 1 : 0)
+const calAndExecute = () => {
+    const newSign = ma5_ma10_ma20_choice(closeList)
+    // const newSign = ma3_ma7_and_delay1(closeList)
+    // const newSign = ma3_ma7_and_delay1_always_hold(closeList, sign)
     if (newSign !== sign) {
-        executeSign()
         sign = newSign
+        executeSign()
     }
 }
 
@@ -56,7 +48,7 @@ const executeSign = () => {
 export const updateClose = (closePrice: number) => {
     closeList.push(closePrice)
     closeList = closeList.slice(-900)
-    calSign(closePrice)
+    calAndExecute()
 }
 
 /**
