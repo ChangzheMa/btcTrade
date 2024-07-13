@@ -23,16 +23,15 @@ export const mockExActionTrade = (price: number) => {
         if (currentOrderOp === 'buy' && price < currentOrderPrice) {
             accountMoney -= currentOrderMount
             accountVolume += currentOrderMount / currentOrderPrice
-            clearCurrentOrder()
             filled = true
         } else if (currentOrderOp === 'sell' && price > currentOrderPrice) {
             accountMoney += currentOrderMount
             accountVolume -= currentOrderMount / currentOrderPrice
-            clearCurrentOrder()
             filled = true
         }
         if (filled) {
-            console.log(`【成交了！】 ${currentOrderOp} , ${currentOrderPrice} , ${currentOrderMount} , 账户价值: ${accountMoney + accountVolume * lastPrice}`)
+            console.log(`【成交了！】                            ${currentOrderOp} , ${currentOrderPrice} , ${currentOrderMount} , 账户价值: ${accountMoney + accountVolume * lastPrice}, 持仓: ${accountVolume * lastPrice}`)
+            clearCurrentOrder()
         }
     }
 
@@ -44,7 +43,6 @@ export const mockExSendOrder = (op: 'sell' | 'buy' | null, price: number, mount:
     const ask = parseFloat(bestAsk)
     const bid = parseFloat(bestBid)
     if ((op === 'sell' && price < bid) || (op === 'buy' && price > ask)) {
-        console.log(`                                                   【下单失败】 ${op} , ${price} , ${mount}`)
         return false
     } else {
         currentOrderOp = op
