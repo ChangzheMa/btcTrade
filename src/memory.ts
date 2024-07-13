@@ -10,13 +10,9 @@ let bestBid: string
 let sign: number
 
 const calAndExecute = () => {
-    const newSign = ma5_ma10_ma20_choice(closeList)
-    // const newSign = ma3_ma7_and_delay1(closeList)
-    // const newSign = ma3_ma7_and_delay1_always_hold(closeList, sign)
-    if (newSign !== sign) {
-        sign = newSign
-        executeSign()
-    }
+    sign = ma5_ma10_ma20_choice(closeList)
+    // sign = ma3_ma7_and_delay1(closeList)
+    // sign = ma3_ma7_and_delay1_always_hold(closeList, sign)
 }
 
 // 这个方法的作用是把仓位调到 sign 所代表的目标
@@ -28,21 +24,23 @@ const executeSign = () => {
     const targetMoney = sign === 1 ? 0 : (sign === -1 ? totalValue * 2 : totalValue)
     const targetMount = totalValue - targetMoney
     const mountChange = targetMount - account.accountVolume * middleAskBid
-    if (Math.abs(mountChange) < 1) {
-        return  // 变化太小了，不用调仓
-    }
 
-    const op = mountChange > 0 ? 'buy' : 'sell'
-    // const price = middleAskBid
-    const price = op === 'buy' ? parseFloat(bestBid) + 0.1 : parseFloat(bestAsk) - 0.1
+    if (Math.abs(mountChange) > 1) {
+        const op = mountChange > 0 ? 'buy' : 'sell'
+        // const price = middleAskBid
+        const price = op === 'buy' ? parseFloat(bestBid) + 0.1 : parseFloat(bestAsk) - 0.1
 
-    setTimeout(() => {
-        mockExClearOrder()
-        const success = mockExSendOrder(op, price, Math.abs(mountChange))
-        if (!success) {
+        setTimeout(() => {
+            mockExClearOrder()
+            mockExSendOrder(op, price, Math.abs(mountChange))
             executeSign()
-        }
-    }, _.random(200, 1000, false))
+        }, _.random(200, 1000, false))
+    } else {
+        setTimeout(() => {
+            mockExClearOrder()
+            executeSign()
+        }, _.random(200, 1000, false))
+    }
 }
 
 export const updateClose = (closePrice: number) => {
@@ -58,3 +56,5 @@ export const updateBestAskBid = (ask: string, bid: string) => {
     bestAsk = ask
     bestBid = bid
 }
+
+setTimeout(executeSign, 3000)

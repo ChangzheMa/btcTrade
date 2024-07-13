@@ -13,8 +13,8 @@ export const ma5_ma10_ma20_choice = (closeList: number[]): number => {
     const cond_up = close > ma5 && ma5 > ma10 && ma10 > ma20
     const cond_up_reverse = close > ma300 && ma300 > ma600
 
-    // return cond_down && !cond_down_reverse ? -1 : (cond_up && !cond_up_reverse ? 1 : 0)
-    return cond_down ? -1 : (cond_up ? 1 : 0)
+    return cond_down && !cond_down_reverse ? -1 : (cond_up && !cond_up_reverse ? 1 : 0)
+    // return cond_down ? -1 : (cond_up ? 1 : 0)
 }
 
 export const ma3_ma7_and_delay1 = (closeList: number[]): number => {
