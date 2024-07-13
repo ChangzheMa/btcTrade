@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "start": "npm install && tsc && node dist/index.js"
+    "start": "npm install && tsc && node dist/index.js",
+    "pm2": "npm install && tsc && pm2 start dist/index.js"
   },
   "dependencies": {
     "@binance/connector": "^3.4.0",
