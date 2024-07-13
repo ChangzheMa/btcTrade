@@ -13,7 +13,7 @@ const callbacks = {
         if (obj['e'] === 'kline') {
             console.log(`[${new Date().toLocaleString()}]【K线】  O ${obj['k']['o']}  C ${obj['k']['c']}     H ${obj['k']['h']}  L ${obj['k']['l']}`)
         } else if (obj['e'] === 'aggTrade') {
-            console.log(`[${new Date().toLocaleString()}]【成交】  ${obj['m'] ? '↓' : '↑'} ${obj['p']}`)
+            console.log(`[${new Date().toLocaleString()}]【成交】  ${obj['m'] ? '<<' : '  '} ${obj['p']} ${obj['m'] ? '  ' : '>>'}`)
         }
     }
 }
