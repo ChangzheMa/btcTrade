@@ -23,18 +23,18 @@ const calAndExecute = () => {
 const executeSign = () => {
     const account = me.mockExGetAccount()
 
-    const orderPrice = (parseFloat(bestAsk) + parseFloat(bestBid)) / 2
-    const totalValue = account.accountMoney + account.accountVolume * orderPrice
+    const middleAskBid = (parseFloat(bestAsk) + parseFloat(bestBid)) / 2
+    const totalValue = account.accountMoney + account.accountVolume * middleAskBid
     const targetMoney = sign === 1 ? 0 : (sign === -1 ? totalValue * 2 : totalValue)
     const targetMount = totalValue - targetMoney
-    const mountChange = targetMount - account.accountVolume * orderPrice
-    const op = mountChange > 0 ? 'buy' : 'sell'
-    let price: number = orderPrice
-    if (op === 'buy') {
-        price = parseFloat(bestBid) + 0.1
-    } else {
-        price = parseFloat(bestAsk) - 0.1
+    const mountChange = targetMount - account.accountVolume * middleAskBid
+    if (Math.abs(mountChange) < 1) {
+        return  // 变化太小了，不用调仓
     }
+
+    const op = mountChange > 0 ? 'buy' : 'sell'
+    // const price = middleAskBid
+    const price = op === 'buy' ? parseFloat(bestBid) + 0.1 : parseFloat(bestAsk) - 0.1
 
     setTimeout(() => {
         mockExClearOrder()
