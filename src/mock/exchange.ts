@@ -48,7 +48,7 @@ export const mockExSendOrder = (op: 'sell' | 'buy' | null, price: number, mount:
         currentOrderOp = op
         currentOrderPrice = price
         currentOrderMount = mount
-        console.log(`【创建订单】 ${op} , ${price} , ${mount}`)
+        // console.log(`【创建订单】 ${op} , ${price} , ${mount}`)
         return true
     }
 }

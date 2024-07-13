@@ -37,10 +37,16 @@ const executeSign = () => {
     const targetMount = totalValue - targetMoney
     const mountChange = targetMount - account.accountVolume * orderPrice
     const op = mountChange > 0 ? 'buy' : 'sell'
+    let price: number = orderPrice
+    if (op === 'buy') {
+        price = parseFloat(bestBid) + 0.1
+    } else {
+        price = parseFloat(bestAsk) - 0.1
+    }
 
     setTimeout(() => {
         mockExClearOrder()
-        const success = mockExSendOrder(op, orderPrice, Math.abs(mountChange))
+        const success = mockExSendOrder(op, price, Math.abs(mountChange))
         if (!success) {
             executeSign()
         }
