@@ -1,36 +1,38 @@
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 import { Console } from 'console'
 import { Interval, WebsocketStream } from '@binance/connector-typescript'
 
 import { SYMBOL, SYMBOL_BASE } from './config.js'
-import * as _ from 'lodash'
-import * as fs from 'fs';
-import * as path from 'path';
+import _ from 'lodash'
+import * as fs from 'fs'
+import * as path from 'path'
 
 const logger = new Console({ stdout: process.stdout, stderr: process.stderr })
 
 const DIFF_RANGE_LIST = [20, 50, 300, 1800, 10800, 36000, 86400]
 const LOG_FILE_NAME = `price_diff_log_${DIFF_RANGE_LIST.join('_')}.csv`
-const LOG_FILE_PATH = path.join(__dirname, 'data', LOG_FILE_NAME);
+const LOG_DIRECTORY = path.join(__dirname, '..', 'src', 'data')
+const LOG_FILE_PATH = path.join(LOG_DIRECTORY, LOG_FILE_NAME)
 
 const priceCache: {[k: string]: { close: number, timestamp: number}} = {}
 let priceDiffCache: number[] = []
 
 const initializeLogFile = () => {
     try {
+        fs.mkdirSync(LOG_DIRECTORY, { recursive: true })
         if (!fs.existsSync(LOG_FILE_PATH)) {
-            const header = `timestamp,${DIFF_RANGE_LIST.join(',')}\n`;
-            fs.writeFileSync(LOG_FILE_PATH, header, { encoding: 'utf-8' });
-            console.log(`日志文件已创建: ${LOG_FILE_NAME}`);
+            const header = `timestamp,${DIFF_RANGE_LIST.join(',')}\n`
+            fs.writeFileSync(LOG_FILE_PATH, header, { encoding: 'utf-8' })
+            console.log(`日志文件已创建: ${LOG_FILE_NAME}`)
         } else {
-            console.log(`日志文件已存在: ${LOG_FILE_NAME}`);
+            console.log(`日志文件已存在: ${LOG_FILE_NAME}`)
         }
     } catch (error) {
-        console.error('初始化日志文件时出错:', error);
+        console.error('初始化日志文件时出错:', error)
     }
 }
 
@@ -38,7 +40,7 @@ const callbacks = {
     open: () => logger.debug('Connected with Websocket server'),
     close: () => logger.debug('Disconnected with Websocket server'),
     message: (data: string) => {
-        const obj = JSON.parse(data);
+        const obj = JSON.parse(data)
         if (obj['e'] === 'kline') {
             updateCache(obj['s'], obj['k']['c'])
             checkPriceDiffByCache()
@@ -57,11 +59,11 @@ const updateCache = (symble: string, close: number) => {
 
 function savePriceDiff(meanDiffObj: { [p: string]: number }) {
     try {
-        const timestamp = new Date().toISOString();
-        const row = `${timestamp},${DIFF_RANGE_LIST.map(range => meanDiffObj[range]).join(',')}\n`;
-        fs.appendFileSync(LOG_FILE_PATH, row, { encoding: 'utf-8' });
+        const timestamp = new Date().toISOString()
+        const row = `${timestamp},${DIFF_RANGE_LIST.map(range => meanDiffObj[range]).join(',')}\n`
+        fs.appendFileSync(LOG_FILE_PATH, row, { encoding: 'utf-8' })
     } catch (error) {
-        console.error('写入日志文件时出错:', error);
+        console.error('写入日志文件时出错:', error)
     }
 }
 
