@@ -59,7 +59,7 @@ const updateCache = (symble: string, close: number) => {
 
 function savePriceDiff(meanDiffObj: { [p: string]: number }) {
     try {
-        const timestamp = new Date().toISOString()
+        const timestamp = new Date().valueOf()
         const row = `${timestamp},${DIFF_RANGE_LIST.map(range => meanDiffObj[range]).join(',')}\n`
         fs.appendFileSync(LOG_FILE_PATH, row, { encoding: 'utf-8' })
     } catch (error) {
