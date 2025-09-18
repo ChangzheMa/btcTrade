@@ -35,14 +35,15 @@ const updateCache = (symble: string, close: number) => {
 const printPriceDiffByCache = () => {
     if (!!priceCache[SYMBOL] && !!priceCache[SYMBOL_BASE] && Math.abs(priceCache[SYMBOL]['timestamp'] - priceCache[SYMBOL_BASE]['timestamp']) < 200) {
         priceDiffCache.push(priceCache[SYMBOL]['close'] - priceCache[SYMBOL_BASE]['close'])
-        priceDiffCache = priceDiffCache.slice(-1000)
+        priceDiffCache = priceDiffCache.slice(-100000)
         const lastDiff = priceDiffCache[priceDiffCache.length - 1]
-        console.log(
-            `价格差: ${lastDiff.toFixed(4)} , ` +
-            `偏离均值: ${('     ' + (lastDiff - mean(priceDiffCache.slice(-20))).toFixed(4)).slice(-10)} (20)  ` +
-            `${('     ' + (lastDiff - mean(priceDiffCache.slice(-50))).toFixed(4)).slice(-10)} (50)  ` +
-            `${('     ' + (lastDiff - mean(priceDiffCache.slice(-300))).toFixed(4)).slice(-10)} (300)`
-        )
+        const meanDiffObj: {[k: string]: number} = {}
+        const diffRangeList = [20, 50, 300, 1800, 10800, 36000, 86400]
+        for (const range in diffRangeList) {
+            meanDiffObj[range] = lastDiff - mean(priceDiffCache.slice(-range))
+        }
+        console.log(`价格差: ${lastDiff.toFixed(4)} , 偏离均值: ` +
+            diffRangeList.map(range => `${('     ' + (meanDiffObj[range]).toFixed(4)).slice(-10)} (${range})`).join('    '))
     }
 }
 
