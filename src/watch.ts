@@ -75,7 +75,7 @@ const checkPriceDiffByCache = () => {
         const meanDiffObj: {[k: string]: number} = {}
 
         for (const range of DIFF_RANGE_LIST) {
-            meanDiffObj[range] = lastDiff - _.mean(priceDiffCache.slice(-range))
+            meanDiffObj[range] = _.round(lastDiff - _.mean(priceDiffCache.slice(-range)), 6)
         }
         console.log(`价格差: ${lastDiff.toFixed(4)} , 偏离均值: ` +
             DIFF_RANGE_LIST.map(range => `${('     ' + (meanDiffObj[range]).toFixed(4)).slice(-10)} (${range})`).join('    '))
