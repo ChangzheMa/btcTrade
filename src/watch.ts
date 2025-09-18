@@ -15,7 +15,7 @@ const logger = new Console({ stdout: process.stdout, stderr: process.stderr })
 
 const DIFF_RANGE_LIST = [20, 50, 300, 1800, 10800, 36000, 86400]
 const LOG_FILE_NAME = `price_diff_log_${DIFF_RANGE_LIST.join('_')}.csv`
-const LOG_DIRECTORY = path.join(__dirname, '..', 'src', 'data')
+const LOG_DIRECTORY = path.join(__dirname, '..', 'data')
 const LOG_FILE_PATH = path.join(LOG_DIRECTORY, LOG_FILE_NAME)
 
 const priceCache: {[k: string]: { close: number, timestamp: number}} = {}
