@@ -1,14 +1,38 @@
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 import { Console } from 'console'
 import { Interval, WebsocketStream } from '@binance/connector-typescript'
 
 import { SYMBOL, SYMBOL_BASE } from './config.js'
-import pkg from 'lodash'
-const { mean } = pkg
+import * as _ from 'lodash'
+import * as fs from 'fs';
+import * as path from 'path';
 
 const logger = new Console({ stdout: process.stdout, stderr: process.stderr })
 
+const DIFF_RANGE_LIST = [20, 50, 300, 1800, 10800, 36000, 86400]
+const LOG_FILE_NAME = `price_diff_log_${DIFF_RANGE_LIST.join('_')}.csv`
+const LOG_FILE_PATH = path.join(__dirname, 'data', LOG_FILE_NAME);
+
 const priceCache: {[k: string]: { close: number, timestamp: number}} = {}
 let priceDiffCache: number[] = []
+
+const initializeLogFile = () => {
+    try {
+        if (!fs.existsSync(LOG_FILE_PATH)) {
+            const header = `timestamp,${DIFF_RANGE_LIST.join(',')}\n`;
+            fs.writeFileSync(LOG_FILE_PATH, header, { encoding: 'utf-8' });
+            console.log(`日志文件已创建: ${LOG_FILE_NAME}`);
+        } else {
+            console.log(`日志文件已存在: ${LOG_FILE_NAME}`);
+        }
+    } catch (error) {
+        console.error('初始化日志文件时出错:', error);
+    }
+}
 
 const callbacks = {
     open: () => logger.debug('Connected with Websocket server'),
@@ -16,9 +40,8 @@ const callbacks = {
     message: (data: string) => {
         const obj = JSON.parse(data);
         if (obj['e'] === 'kline') {
-            // console.log(`[${new Date().toLocaleString()}]【K线 ${(obj['s'] + '  ').slice(0,8)} 】  O ${obj['k']['o']}  C ${obj['k']['c']}     H ${obj['k']['h']}  L ${obj['k']['l']}`)
             updateCache(obj['s'], obj['k']['c'])
-            printPriceDiffByCache()
+            checkPriceDiffByCache()
         } else if (obj['e'] === 'aggTrade') {
             console.log(`[${new Date().toLocaleString()}]【成交】  ${obj['m'] ? '<<' : '  '} ${obj['p']} ${obj['m'] ? '  ' : '>>'}`)
         }
@@ -32,20 +55,34 @@ const updateCache = (symble: string, close: number) => {
     }
 }
 
-const printPriceDiffByCache = () => {
+function savePriceDiff(meanDiffObj: { [p: string]: number }) {
+    try {
+        const timestamp = new Date().toISOString();
+        const row = `${timestamp},${DIFF_RANGE_LIST.map(range => meanDiffObj[range]).join(',')}\n`;
+        fs.appendFileSync(LOG_FILE_PATH, row, { encoding: 'utf-8' });
+    } catch (error) {
+        console.error('写入日志文件时出错:', error);
+    }
+}
+
+const checkPriceDiffByCache = () => {
     if (!!priceCache[SYMBOL] && !!priceCache[SYMBOL_BASE] && Math.abs(priceCache[SYMBOL]['timestamp'] - priceCache[SYMBOL_BASE]['timestamp']) < 200) {
         priceDiffCache.push(priceCache[SYMBOL]['close'] - priceCache[SYMBOL_BASE]['close'])
         priceDiffCache = priceDiffCache.slice(-100000)
         const lastDiff = priceDiffCache[priceDiffCache.length - 1]
         const meanDiffObj: {[k: string]: number} = {}
-        const diffRangeList = [20, 50, 300, 1800, 10800, 36000, 86400]
-        for (const range in diffRangeList) {
-            meanDiffObj[range] = lastDiff - mean(priceDiffCache.slice(-range))
+
+        for (const range of DIFF_RANGE_LIST) {
+            meanDiffObj[range] = lastDiff - _.mean(priceDiffCache.slice(-range))
         }
         console.log(`价格差: ${lastDiff.toFixed(4)} , 偏离均值: ` +
-            diffRangeList.map(range => `${('     ' + (meanDiffObj[range]).toFixed(4)).slice(-10)} (${range})`).join('    '))
+            DIFF_RANGE_LIST.map(range => `${('     ' + (meanDiffObj[range]).toFixed(4)).slice(-10)} (${range})`).join('    '))
+
+        savePriceDiff(meanDiffObj)
     }
 }
+
+initializeLogFile()
 
 const websocketStreamClient = new WebsocketStream({ callbacks })
 websocketStreamClient.kline(SYMBOL, Interval['1s'])
