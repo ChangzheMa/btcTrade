@@ -1,5 +1,5 @@
 import { BookDepthData, DepthLevel, DepthUpdateEvent } from './types.js';
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 export class LocalCache {
     depthUpdateEventList: DepthUpdateEvent[];
