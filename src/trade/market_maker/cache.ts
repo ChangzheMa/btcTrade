@@ -19,11 +19,11 @@ export class LocalCache {
             return
         }
         for (const event of this.depthUpdateEventList) {
-            if (event.u < this.bookDepthCurrent.lastUpdateId) {
+            if (event.u <= this.bookDepthCurrent.lastUpdateId) {
                 // nothing
-            } else if (event.U > this.bookDepthCurrent.lastUpdateId) {
+            } else if (event.U > this.bookDepthCurrent.lastUpdateId + 1) {
+                console.log(`数据异常，重建订单簿: event: ${JSON.stringify(event)}, lastUpdateId: ${this.bookDepthCurrent.lastUpdateId}`)
                 this.bookDepthCurrent = null
-                console.log("数据异常，重建订单簿")
             } else {
                 this.bookDepthCurrent.bids = this._updateDepthLevel(this.bookDepthCurrent.bids, event.b, false)
                 this.bookDepthCurrent.asks = this._updateDepthLevel(this.bookDepthCurrent.asks, event.a, true)
