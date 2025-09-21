@@ -14,6 +14,7 @@ const diffBookDepth = async () => {
 
         const stream = connection.diffBookDepth({
             symbol: SYMBOL,
+            updateSpeed: '100ms'
         });
 
         stream.on('message', (data) => {
