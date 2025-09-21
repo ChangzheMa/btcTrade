@@ -16,6 +16,13 @@ const configurationWebsocketStreams = {
 
 const client = new Spot({ configurationRestAPI, configurationWebsocketStreams });
 
+function printDepth() {
+    const depth = localCache.getBookDepthCurrent()
+    if (depth) {
+        console.log(`最优价格: bid: ${depth.bids[0]}, ask: ${depth.asks[0]}`)
+    }
+}
+
 const diffBookDepth = async () => {
     let connection;
     try {
@@ -30,6 +37,7 @@ const diffBookDepth = async () => {
             if (!!data.E && !!data.s && !!data.U && !!data.u && !!data.a && !!data.b) {
                 localCache.onUpdateEvent(data as DepthUpdateEvent)
             }
+            printDepth()
         });
     } catch (error) {
         console.error(error);
