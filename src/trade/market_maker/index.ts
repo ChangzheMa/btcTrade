@@ -1,5 +1,5 @@
 import { Spot, SPOT_WS_STREAMS_PROD_URL } from '@binance/spot';
-import { SYMBOL } from '../../config.js';
+import { SYMBOL } from './config.js'
 
 const configurationWebsocketStreams = {
     wsURL: process.env.WS_STREAMS_URL ?? SPOT_WS_STREAMS_PROD_URL,
@@ -24,4 +24,4 @@ const diffBookDepth = async () => {
     }
 }
 
-diffBookDepth();
+diffBookDepth().then();
