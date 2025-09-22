@@ -1,4 +1,4 @@
-import { Spot, SPOT_REST_API_PROD_URL, SPOT_WS_STREAMS_PROD_URL } from '@binance/spot';
+import { Spot, SPOT_REST_API_PROD_URL, SPOT_WS_API_PROD_URL, SPOT_WS_STREAMS_PROD_URL } from '@binance/spot';
 import { SYMBOL } from './config.js'
 import { LocalCache } from './cache.js';
 import { BookDepthData, DepthUpdateEvent } from './types.js';
@@ -10,20 +10,25 @@ const configurationRestAPI = {
     apiSecret: process.env.API_SECRET ?? '',
     basePath: process.env.BASE_PATH ?? SPOT_REST_API_PROD_URL,
 };
+const configurationWebsocketAPI = {
+    apiKey: process.env.API_KEY ?? '',
+    apiSecret: process.env.API_SECRET ?? '',
+    wsURL: process.env.WS_API_URL ?? SPOT_WS_API_PROD_URL,
+};
 const configurationWebsocketStreams = {
     wsURL: process.env.WS_STREAMS_URL ?? SPOT_WS_STREAMS_PROD_URL,
 };
 
-const client = new Spot({ configurationRestAPI, configurationWebsocketStreams });
+const client = new Spot({ configurationRestAPI, configurationWebsocketAPI, configurationWebsocketStreams });
 
-function printDepth() {
-    const depth = localCache.getBookDepthCurrent()
-    if (depth) {
-        console.log(`最优价格: bid: ${depth.bids[0]}, ask: ${depth.asks[0]}`)
-    }
-}
+// const printDepth = () => {
+//     const depth = localCache.getBookDepthCurrent()
+//     if (depth) {
+//         console.log(`最优价格: bid: ${depth.bids[0]}, ask: ${depth.asks[0]}`)
+//     }
+// }
 
-const diffBookDepth = async () => {
+const updateBookDepth = async () => {
     let connection;
     try {
         connection = await client.websocketStreams.connect();
@@ -37,7 +42,7 @@ const diffBookDepth = async () => {
             if (!!data.E && !!data.s && !!data.U && !!data.u && !!data.a && !!data.b) {
                 localCache.onUpdateEvent(data as DepthUpdateEvent)
             }
-            printDepth()
+            // printDepth()
         });
     } catch (error) {
         console.error(error);
@@ -59,4 +64,19 @@ const initBookDepth = async () => {
     }
 }
 
-diffBookDepth().then();
+const listenAccount = async () => {
+    let connection;
+    try {
+        connection = await client.websocketAPI.connect();
+        const res = await connection.userDataStreamSubscribeSignature();
+        const stream = res.stream;
+        stream.on('message', (data) => {
+            console.log('userDataStreamSubscribeSignature() stream data:', data);
+        });
+    } catch (error) {
+        console.error('userDataStreamSubscribe() error:', error);
+    }
+}
+
+updateBookDepth().then();
+listenAccount().then();
