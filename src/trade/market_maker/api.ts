@@ -106,7 +106,7 @@ const initOpenOrders = async () => {
             Z: o.cummulativeQuoteQty!,
             w: o.isWorking!,
             O: o.time!,
-            T: o.time!,   // 使用订单时间作为初始成交时间
+            T: o.updateTime!,   // 使用订单时间作为初始成交时间
         }));
 
         localCache.onOrdersInit(initialOrders);
@@ -136,7 +136,6 @@ export const listenAccount = async () => {
                     localCache.onAccountPositionUpdate(data as OutboundAccountPositionEvent);
                     break;
                 case 'executionReport':
-                    console.log('订单信息: ', data)
                     localCache.onOrderUpdate(data as ExecutionReportEvent);
                     break;
             }

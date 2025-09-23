@@ -71,7 +71,6 @@ export interface ExecutionReportEvent {
     Z: string;
     Y: string;
     Q: string;
-    // ... 其他可选字段
 }
 
 /**

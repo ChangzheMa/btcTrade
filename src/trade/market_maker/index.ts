@@ -8,10 +8,18 @@ const printDepth = () => {
     }
 }
 
+const printOrders = () => {
+    const orders = localCache.getOpenOrders()
+    if (orders && orders.length > 0) {
+        console.log('订单: ' + (orders.map(o => `${o.i}: ${(o.S + '  ').slice(0,4)} ${o.p} ${o.q}`).join('\n      ')))
+    }
+}
+
 listenBookDepth().then();
 listenAccount().then();
 
 setInterval(() => {
     console.log('account position: ', localCache.getAccountPosition())
     printDepth()
+    printOrders()
 }, 1000)
