@@ -8,9 +8,10 @@ const printDepth = () => {
     }
 }
 
-listenBookDepth(printDepth).then();
+listenBookDepth().then();
 listenAccount().then();
 
 setInterval(() => {
     console.log('account position: ', localCache.getAccountPosition())
+    printDepth()
 }, 1000)
