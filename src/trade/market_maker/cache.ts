@@ -3,8 +3,8 @@ import {
     Balance,
     BookDepthData,
     DepthLevel,
-    DepthUpdateEvent,
-    OutboundAccountPositionEvent
+    DepthUpdateEvent, ExecutionReportEvent, OrderCache,
+    OutboundAccountPositionEvent, SimpleSpotOrder
 } from './types.js';
 import _ from 'lodash';
 
@@ -17,12 +17,19 @@ class LocalCache {
     accountPositionEventList: OutboundAccountPositionEvent[];
     accountPositionCurrent: AccountCache | null;
 
+    // --- 订单缓存属性 ---
+    orderEventList: ExecutionReportEvent[]; // 队列接收的仍然是完整事件
+    openOrdersCurrent: OrderCache | null;     // 缓存现在使用精简结构
+
     constructor() {
         this.depthUpdateEventList = []
         this.bookDepthCurrent = null
 
         this.accountPositionEventList = []
         this.accountPositionCurrent = null
+
+        this.orderEventList = [];
+        this.openOrdersCurrent = null;
     }
 
     // ==================================================
@@ -158,6 +165,88 @@ class LocalCache {
                 // 更新或添加资产到缓存
                 this.accountPositionCurrent.set(updatedBalance.a, updatedBalance);
             }
+        }
+    }
+
+    // ==================================================
+    // 当前挂单缓存相关方法
+    // ==================================================
+
+    /**
+     * 获取所有当前挂单 (返回精简后的结构数组)
+     */
+    public getOpenOrders = (): SimpleSpotOrder[] => {
+        if (!this.openOrdersCurrent) return [];
+        return Array.from(this.openOrdersCurrent.values());
+    }
+
+    /**
+     * 根据 orderId 获取单个挂单 (返回精简后的结构)
+     */
+    public getOpenOrderById = (orderId: number): SimpleSpotOrder | undefined => {
+        return this.openOrdersCurrent?.get(orderId);
+    }
+
+    /**
+     * 处理来自 WebSocket 的订单更新事件 (入参不变)
+     */
+    public onOrderUpdate = (updateEvent: ExecutionReportEvent) => {
+        if (this.openOrdersCurrent) {
+            this._applyOrderUpdate(updateEvent);
+        } else {
+            this.orderEventList.push(updateEvent);
+        }
+    }
+
+    /**
+     * 使用挂单快照初始化缓存 (入参类型修改)
+     */
+    public onOrdersInit = (initialOrders: SimpleSpotOrder[]) => {
+        this.openOrdersCurrent = new Map<number, SimpleSpotOrder>();
+        for (const order of initialOrders) {
+            this.openOrdersCurrent.set(order.i, order);
+        }
+
+        for (const event of this.orderEventList) {
+            this._applyOrderUpdate(event);
+        }
+
+        this.orderEventList = [];
+        console.log("订单缓存初始化并更新完成");
+    }
+
+    /**
+     * 将单个订单更新事件应用到缓存 (内部逻辑修改)
+     */
+    private _applyOrderUpdate = (event: ExecutionReportEvent) => {
+        if (!this.openOrdersCurrent) return;
+
+        const orderStatus = event.X;
+        const orderId = event.i;
+
+        const closedStatus = ['FILLED', 'CANCELED', 'EXPIRED', 'REJECTED'];
+
+        if (closedStatus.includes(orderStatus)) {
+            // 如果订单关闭，从缓存中移除
+            this.openOrdersCurrent.delete(orderId);
+        } else {
+            // 否则，将完整的事件对象转换为精简的订单对象进行存储
+            const simplifiedOrder: SimpleSpotOrder = {
+                i: event.i,
+                s: event.s,
+                c: event.c,
+                S: event.S,
+                p: event.p,
+                q: event.q,
+                X: event.X,
+                x: event.x,
+                z: event.z,
+                Z: event.Z,
+                w: event.w,
+                O: event.O,
+                T: event.T,
+            };
+            this.openOrdersCurrent.set(orderId, simplifiedOrder);
         }
     }
 }

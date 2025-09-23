@@ -1,7 +1,13 @@
 import { Spot, SPOT_REST_API_PROD_URL, SPOT_WS_API_PROD_URL, SPOT_WS_STREAMS_PROD_URL } from '@binance/spot';
 import { SYMBOL } from './config.js'
 import { localCache } from './cache.js';
-import { Balance, BookDepthData, DepthUpdateEvent, OutboundAccountPositionEvent } from './types.js';
+import {
+    Balance,
+    BookDepthData,
+    DepthUpdateEvent,
+    ExecutionReportEvent,
+    OutboundAccountPositionEvent, SimpleSpotOrder
+} from './types.js';
 
 const configurationRestAPI = {
     apiKey: process.env.API_KEY ?? '',
@@ -80,9 +86,42 @@ const initAccount = async () => {
     }
 }
 
+const initOpenOrders = async () => {
+    try {
+        console.log("正在初始化当前挂单列表...");
+        const response = await client.restAPI.getOpenOrders();
+        const openOrdersData = await response.data();
+
+        // **重要**: 将 API 返回的结构直接映射到 SimpleSpotOrder 结构
+        const initialOrders: SimpleSpotOrder[] = openOrdersData.map(o => ({
+            i: o.orderId!,
+            s: o.symbol!,
+            c: o.clientOrderId!,
+            S: o.side! as 'BUY' | 'SELL',
+            p: o.price!,
+            q: o.origQty!,
+            X: o.status!,
+            x: o.status!, // 使用当前 status 作为初始执行类型
+            z: o.executedQty!,
+            Z: o.cummulativeQuoteQty!,
+            w: o.isWorking!,
+            O: o.time!,
+            T: o.time!,   // 使用订单时间作为初始成交时间
+        }));
+
+        localCache.onOrdersInit(initialOrders);
+        return true;
+
+    } catch (error) {
+        console.error('openOrders() error:', error);
+        return false;
+    }
+}
+
 export const listenAccount = async () => {
-    const initSuccess = await initAccount();
-    if (!initSuccess) {
+    const accountInitSuccess = await initAccount();
+    const orderInitSuccess = await initOpenOrders();
+    if (!accountInitSuccess || !orderInitSuccess) {
         return
     }
 
@@ -97,7 +136,8 @@ export const listenAccount = async () => {
                     localCache.onAccountPositionUpdate(data as OutboundAccountPositionEvent);
                     break;
                 case 'executionReport':
-                    console.log('收到订单更新:', data.s, data.S, data.o, '状态:', data.X);
+                    console.log('订单信息: ', data)
+                    localCache.onOrderUpdate(data as ExecutionReportEvent);
                     break;
             }
         });

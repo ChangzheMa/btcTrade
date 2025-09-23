@@ -35,3 +35,69 @@ export interface OutboundAccountPositionEvent {
 
 // 账户仓位缓存的数据结构
 export type AccountCache = Map<string, Balance>;
+
+/**
+ * 收到 WebSocket 推送的完整订单更新事件结构
+ */
+export interface ExecutionReportEvent {
+    e: "executionReport";
+    E: number;
+    s: string;
+    c: string;
+    S: "BUY" | "SELL";
+    o: string;
+    f: string;
+    q: string;
+    p: string;
+    P: string;
+    F: string;
+    g: number;
+    C: string | null;
+    x: string;
+    X: string;
+    r: string;
+    i: number;
+    l: string;
+    z: string;
+    L: string;
+    n: string;
+    N: string | null;
+    T: number;
+    I: number;
+    w: boolean;
+    m: boolean;
+    M: boolean;
+    O: number;
+    Z: string;
+    Y: string;
+    Q: string;
+    // ... 其他可选字段
+}
+
+/**
+ * 用于本地缓存的现货订单结构
+ */
+export interface SimpleSpotOrder {
+    // 核心标识
+    i: number;      // Order ID
+    s: string;      // 交易对
+    c: string;      // clientOrderId
+    // 订单基本信息
+    S: "BUY" | "SELL";
+    p: string;      // 价格
+    q: string;      // 数量
+    // 状态与成交信息
+    X: string;      // 当前状态 (NEW, PARTIALLY_FILLED, etc.)
+    x: string;      // 本次执行类型 (NEW, TRADE, etc.)
+    z: string;      // 累计已成交数量
+    Z: string;      // 累计已成交金额
+    w: boolean;     // 是否在订单簿上
+    // 时间
+    O: number;      // 创建时间
+    T: number;      // 成交时间
+}
+
+/**
+ * 订单缓存的数据结构
+ */
+export type OrderCache = Map<number, SimpleSpotOrder>;
