@@ -1,9 +1,6 @@
 import { listenAccount, listenBookDepth } from './api.js';
 import { localCache } from './cache.js';
 
-listenBookDepth().then();
-listenAccount().then();
-
 const printDepth = () => {
     const depth = localCache.getBookDepthCurrent()
     if (depth) {
@@ -11,7 +8,9 @@ const printDepth = () => {
     }
 }
 
+listenBookDepth(printDepth).then();
+listenAccount().then();
+
 setInterval(() => {
-    printDepth()
     console.log('account position: ', localCache.getAccountPosition())
 }, 1000)

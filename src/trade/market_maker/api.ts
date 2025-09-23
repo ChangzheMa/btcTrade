@@ -34,7 +34,7 @@ const initBookDepth = async () => {
     }
 }
 
-export const listenBookDepth = async () => {
+export const listenBookDepth = async (callback: Function = () => {}) => {
     let connection;
     try {
         connection = await client.websocketStreams.connect();
@@ -48,7 +48,7 @@ export const listenBookDepth = async () => {
             if (!!data.E && !!data.s && !!data.U && !!data.u && !!data.a && !!data.b) {
                 localCache.onUpdateEvent(data as DepthUpdateEvent)
             }
-            // printDepth()
+            callback()
         });
     } catch (error) {
         console.error(error);
