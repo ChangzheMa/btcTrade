@@ -1,7 +1,7 @@
 import { Spot, SPOT_REST_API_PROD_URL, SPOT_WS_API_PROD_URL, SPOT_WS_STREAMS_PROD_URL } from '@binance/spot';
 import { SYMBOL } from './config.js'
 import { localCache } from './cache.js';
-import { BookDepthData, DepthUpdateEvent } from './types.js';
+import { Balance, BookDepthData, DepthUpdateEvent, OutboundAccountPositionEvent } from './types.js';
 
 const configurationRestAPI = {
     apiKey: process.env.API_KEY ?? '',
@@ -55,14 +55,58 @@ export const listenBookDepth = async () => {
     }
 }
 
+const initAccount = async () => {
+    try {
+        console.log("正在初始化账户信息...");
+        const response = await client.restAPI.getAccount();
+        const accountData = await response.data();
+
+        if (!accountData.balances) {
+            return false;
+        }
+
+        const initialBalances: Balance[] = accountData.balances!.map(b => ({
+            a: b.asset!,
+            f: b.free!,
+            l: b.locked!,
+        }));
+        localCache.onAccountPositionInit(initialBalances);
+        console.log("账户信息初始化成功。");
+        return true;
+
+    } catch (error) {
+        console.error('account() error:', error);
+        return false;
+    }
+}
+
+// 用于确保 initAccount 只被调用一次的标志
+let isAccountInitialized = false;
+
 export const listenAccount = async () => {
     let connection;
     try {
         connection = await client.websocketAPI.connect();
         const res = await connection.userDataStreamSubscribeSignature();
         const stream = res.stream;
-        stream.on('message', (data) => {
-            console.log('userDataStreamSubscribeSignature() stream data:', data);
+        stream.on('message', async (data) => {
+            if (!isAccountInitialized) {
+                isAccountInitialized = true; // 立即设置标志，防止重复调用
+                const success = await initAccount();
+                if (!success) {
+                    isAccountInitialized = false;
+                }
+            }
+
+            switch (data.e) {
+                case 'outboundAccountPosition':
+                    localCache.onAccountPositionUpdate(data as OutboundAccountPositionEvent);
+                    break;
+
+                case 'executionReport':
+                    console.log('收到订单更新:', data.s, data.S, data.o, '状态:', data.X);
+                    break;
+            }
         });
     } catch (error) {
         console.error('userDataStreamSubscribe() error:', error);
