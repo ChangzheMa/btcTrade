@@ -80,29 +80,22 @@ const initAccount = async () => {
     }
 }
 
-// 用于确保 initAccount 只被调用一次的标志
-let isAccountInitialized = false;
-
 export const listenAccount = async () => {
+    const initSuccess = await initAccount();
+    if (!initSuccess) {
+        return
+    }
+
     let connection;
     try {
         connection = await client.websocketAPI.connect();
         const res = await connection.userDataStreamSubscribeSignature();
         const stream = res.stream;
         stream.on('message', async (data) => {
-            if (!isAccountInitialized) {
-                isAccountInitialized = true; // 立即设置标志，防止重复调用
-                const success = await initAccount();
-                if (!success) {
-                    isAccountInitialized = false;
-                }
-            }
-
             switch (data.e) {
                 case 'outboundAccountPosition':
                     localCache.onAccountPositionUpdate(data as OutboundAccountPositionEvent);
                     break;
-
                 case 'executionReport':
                     console.log('收到订单更新:', data.s, data.S, data.o, '状态:', data.X);
                     break;
