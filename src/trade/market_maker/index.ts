@@ -21,12 +21,12 @@ const configurationWebsocketStreams = {
 
 const client = new Spot({ configurationRestAPI, configurationWebsocketAPI, configurationWebsocketStreams });
 
-const printDepth = () => {
-    const depth = localCache.getBookDepthCurrent()
-    if (depth) {
-        console.log(`最优价格: bid: ${depth.bids[0]}, ask: ${depth.asks[0]}`)
-    }
-}
+// const printDepth = () => {
+//     const depth = localCache.getBookDepthCurrent()
+//     if (depth) {
+//         console.log(`最优价格: bid: ${depth.bids[0]}, ask: ${depth.asks[0]}`)
+//     }
+// }
 
 const updateBookDepth = async () => {
     let connection;
@@ -42,7 +42,7 @@ const updateBookDepth = async () => {
             if (!!data.E && !!data.s && !!data.U && !!data.u && !!data.a && !!data.b) {
                 localCache.onUpdateEvent(data as DepthUpdateEvent)
             }
-            printDepth()
+            // printDepth()
         });
     } catch (error) {
         console.error(error);
