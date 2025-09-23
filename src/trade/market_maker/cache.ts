@@ -129,7 +129,9 @@ class LocalCache {
         // 使用 Map 结构初始化缓存，便于快速查找
         this.accountPositionCurrent = new Map<string, Balance>();
         for (const balance of initialBalances) {
-            this.accountPositionCurrent.set(balance.a, balance);
+            if (parseFloat(balance.f) != 0 || parseFloat(balance.l) != 0) {
+                this.accountPositionCurrent.set(balance.a, balance);
+            }
         }
 
         // 应用在初始化之前收到的所有排队事件
