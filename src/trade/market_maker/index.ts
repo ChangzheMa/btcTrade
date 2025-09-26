@@ -36,12 +36,11 @@ const strategyTrade = () => {
     sendLimitMakerOrder(bestAsk, 20, 'SELL').then()
 }
 
-listenBookDepth().then();
+listenBookDepth(strategyTrade).then();
 listenAccount().then();
 
 setInterval(() => {
     console.log('account position: ', localCache.getAccountPosition())
     printDepth()
     printOrders()
-    strategyTrade()
 }, 1000)
