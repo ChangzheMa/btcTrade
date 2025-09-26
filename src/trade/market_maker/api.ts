@@ -1,4 +1,10 @@
-import { Spot, SPOT_REST_API_PROD_URL, SPOT_WS_API_PROD_URL, SPOT_WS_STREAMS_PROD_URL } from '@binance/spot';
+import {
+    Spot,
+    SPOT_REST_API_PROD_URL,
+    SPOT_WS_API_PROD_URL,
+    SPOT_WS_STREAMS_PROD_URL,
+    SpotWebsocketAPI
+} from '@binance/spot';
 import { SYMBOL } from './config.js'
 import { localCache } from './cache.js';
 import {
@@ -143,4 +149,20 @@ export const listenAccount = async () => {
     } catch (error) {
         console.error('userDataStreamSubscribe() error:', error);
     }
+}
+
+let orderConnection: any;
+
+export const sendLimitMakerOrder = async (price: number, volume: number, buyOrSell: 'BUY' | 'SELL') => {
+    if (!orderConnection) {
+        orderConnection = await client.websocketAPI.connect();
+    }
+    console.log(`sendLimitMakerOrder: ${(buyOrSell + ' ').slice(0, 4)}, p ${price}, v ${volume}`)
+    await orderConnection.orderPlace({
+        symbol: SYMBOL,
+        side: buyOrSell,
+        type: SpotWebsocketAPI.OrderPlaceTypeEnum.LIMIT_MAKER,
+        price: price,
+        quantity: volume / price
+    });
 }
