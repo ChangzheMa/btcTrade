@@ -18,18 +18,18 @@ const printOrders = () => {
 const strategyTrade = () => {
     const orders = localCache.getOpenOrders()
     if (!!orders && orders.length > 0) {
-        console.log(`order exists, return`)
+        // console.log(`order exists, return`)
         return
     }
     const depth = localCache.getBookDepthCurrent()
     if (!depth) {
-        console.log(`order book is null, return`)
+        // console.log(`order book is null, return`)
         return
     }
     const bestBid = parseFloat(depth.bids[0][0])
     const bestAsk = parseFloat(depth.asks[0][0])
     if (!bestBid || !bestAsk) {
-        console.log(`missing best price, return`)
+        // console.log(`missing best price, return`)
         return
     }
     sendLimitMakerOrder(bestBid, 20, 'BUY').then()
@@ -39,8 +39,8 @@ const strategyTrade = () => {
 listenBookDepth(strategyTrade).then();
 listenAccount().then();
 
-setInterval(() => {
-    console.log('account position: ', localCache.getAccountPosition())
-    printDepth()
-    printOrders()
-}, 1000)
+// setInterval(() => {
+//     console.log('account position: ', localCache.getAccountPosition())
+//     printDepth()
+//     printOrders()
+// }, 1000)
