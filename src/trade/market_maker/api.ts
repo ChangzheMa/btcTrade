@@ -5,7 +5,7 @@ import {
     SPOT_WS_STREAMS_PROD_URL,
     SpotWebsocketAPI
 } from '@binance/spot';
-import { SYMBOL } from './config.js'
+import { QUANTITY_PRECISION_MAP, SYMBOL } from './config.js'
 import { localCache } from './cache.js';
 import {
     Balance,
@@ -14,6 +14,7 @@ import {
     ExecutionReportEvent,
     OutboundAccountPositionEvent, SimpleSpotOrder
 } from './types.js';
+import _ from 'lodash';
 
 const configurationRestAPI = {
     apiKey: process.env.API_KEY ?? '',
@@ -163,6 +164,6 @@ export const sendLimitMakerOrder = async (price: number, volume: number, buyOrSe
         side: buyOrSell,
         type: SpotWebsocketAPI.OrderPlaceTypeEnum.LIMIT_MAKER,
         price: price,
-        quantity: volume / price
+        quantity: _.round(volume / price, QUANTITY_PRECISION_MAP[SYMBOL])
     });
 }
