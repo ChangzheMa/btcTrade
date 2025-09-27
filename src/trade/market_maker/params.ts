@@ -2,7 +2,7 @@ import { SYMBOL } from './config.js';
 
 // 最小价差
 export const PRICE_GAP_LOWER_LIMIT: {[k: string]: number} = {
-    [SYMBOL]: 5
+    [SYMBOL]: 1
 }
 
 // 未完成订单等待多久后抛弃
