@@ -44,7 +44,7 @@ const hasSufficientBalance = (symbol: string, buyPrice: number, sellPrice: numbe
     // 3. 检查买单余额 (花费 volumeInQuoteAsset 的计价资产)
     // 需要的计价资产(FDUSD)数量 = volumeInQuoteAsset
     if (!quoteAssetBalance || parseFloat(quoteAssetBalance.f) < volumeInQuoteAsset) {
-        console.log(`余额不足 [买单]: 需要 ${volumeInQuoteAsset.toFixed(2)} ${quoteAsset}, 可用: ${quoteAssetBalance?.f ?? 0}`);
+        // console.log(`余额不足 [买单]: 需要 ${volumeInQuoteAsset.toFixed(2)} ${quoteAsset}, 可用: ${quoteAssetBalance?.f ?? 0}`);
         return false;
     }
 
@@ -52,7 +52,7 @@ const hasSufficientBalance = (symbol: string, buyPrice: number, sellPrice: numbe
     // 需要的基础资产(BTC)数量 = FDUSD 数量 / 卖出价
     const requiredBaseAmount = volumeInQuoteAsset / sellPrice;
     if (!baseAssetBalance || parseFloat(baseAssetBalance.f) < requiredBaseAmount + 1e-5) {
-        console.log(`余额不足 [卖单]: 需要 ${requiredBaseAmount.toFixed(8)} ${baseAsset}, 可用: ${baseAssetBalance?.f ?? 0}`);
+        // console.log(`余额不足 [卖单]: 需要 ${requiredBaseAmount.toFixed(8)} ${baseAsset}, 可用: ${baseAssetBalance?.f ?? 0}`);
         return false;
     }
 
