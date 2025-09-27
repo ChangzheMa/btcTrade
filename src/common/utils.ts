@@ -5,7 +5,7 @@
  */
 export const parseSymbol = (symbol: string): { base: string, quote: string } => {
     // 常见的计价资产列表
-    const quoteAssets = ['USDT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB'];
+    const quoteAssets = ['USDT', 'FDUSD', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB'];
 
     for (const quote of quoteAssets) {
         if (symbol.endsWith(quote)) {
