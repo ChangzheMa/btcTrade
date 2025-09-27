@@ -1,6 +1,6 @@
 import { listenAccount, listenBookDepth, sendLimitMakerOrder } from './api.js';
 import { localCache } from './cache.js';
-import { ORDER_VOLUME_MAP, PRICE_GAP_LOWER_LIMIT } from './params.js';
+import { ORDER_VOLUME_MAP, PRICE_GAP_LOWER_LIMIT, UN_FILL_ORDER_WAIT_SECOND } from './params.js';
 import { SYMBOL } from './config.js';
 import _ from 'lodash';
 import { parseSymbol } from '../../common/utils.js';
@@ -33,12 +33,7 @@ const printOrders = () => {
  * @param volumeInQuoteAsset 以计价资产为单位的交易量 (e.g., FDUSD 的数量)
  * @returns {boolean} 如果余额充足则返回 true, 否则返回 false
  */
-const hasSufficientBalance = (
-    symbol: string,
-    buyPrice: number,
-    sellPrice: number,
-    volumeInQuoteAsset: number
-): boolean => {
+const hasSufficientBalance = (symbol: string, buyPrice: number, sellPrice: number, volumeInQuoteAsset: number): boolean => {
     // 1. 解析交易对
     const { base: baseAsset, quote: quoteAsset } = parseSymbol(symbol); // base: 'BTC', quote: 'FDUSD'
 
@@ -67,7 +62,8 @@ const hasSufficientBalance = (
 
 const strategyTrade = () => {
     const orders = localCache.getOpenOrders()
-    if (!!orders && orders.length > 0) {
+    const activeOrders = orders.filter(o => o.O > new Date().valueOf() - UN_FILL_ORDER_WAIT_SECOND[SYMBOL] * 1000)
+    if (activeOrders.length > 0) {
         // console.log(`order exists, return`)
         return
     }

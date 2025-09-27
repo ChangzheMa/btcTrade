@@ -7,10 +7,10 @@ export const PRICE_GAP_LOWER_LIMIT: {[k: string]: number} = {
 
 // 未完成订单等待多久后抛弃
 export const UN_FILL_ORDER_WAIT_SECOND: {[k: string]: number} = {
-    [SYMBOL]: 10
+    [SYMBOL]: 3
 }
 
 // 单次下单数量
 export const ORDER_VOLUME_MAP: {[k: string]: number} = {
-    [SYMBOL]: 10
+    [SYMBOL]: 7
 }
