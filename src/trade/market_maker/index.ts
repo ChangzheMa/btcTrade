@@ -19,11 +19,11 @@ const printOrders = () => {
     }
 }
 
-setInterval(() => {
-    console.log('account position: ', localCache.getAccountPosition())
-    // printDepth()
-    // printOrders()
-}, 1000)
+// setInterval(() => {
+//     console.log('account position: ', localCache.getAccountPosition())
+//     printDepth()
+//     printOrders()
+// }, 1000)
 
 /**
  * 检查账户余额是否足够同时下买单和卖单
