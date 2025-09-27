@@ -159,12 +159,12 @@ export const sendLimitMakerOrder = async (price: number, volume: number, buyOrSe
         orderConnection = await client.websocketAPI.connect();
     }
     const quantity = _.round(volume / price, QUANTITY_PRECISION_MAP[SYMBOL])
-    console.log(`sendLimitMakerOrder: ${(buyOrSell + ' ').slice(0, 4)}, p ${price}, v ${volume} (q ${quantity})`)
-    await orderConnection.orderPlace({
+    orderConnection.orderPlace({
         symbol: SYMBOL,
         side: buyOrSell,
         type: SpotWebsocketAPI.OrderPlaceTypeEnum.LIMIT_MAKER,
         price: price,
         quantity: quantity
     });
+    console.log(`sendLimitMakerOrder: ${(buyOrSell + ' ').slice(0, 4)}, p ${price}, v ${volume} (q ${quantity})`)
 }
