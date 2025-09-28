@@ -168,3 +168,17 @@ export const sendLimitMakerOrder = async (price: number, volume: number, buyOrSe
     });
     console.log(`sendLimitMakerOrder: ${(buyOrSell + ' ').slice(0, 4)}, p ${price}, v ${volume} (q ${quantity})`)
 }
+
+export const cancelOrdersByIds = async (symbol: string, orderIdsToCancel: number[]) => {
+    if (!orderIdsToCancel || orderIdsToCancel.length === 0) {
+        return;
+    }
+
+    if (!orderConnection) {
+        orderConnection = await client.websocketAPI.connect();
+    }
+
+    await Promise.allSettled(orderIdsToCancel.map(orderId => {
+        return orderConnection.orderCancel({symbol, orderId})
+    }))
+}

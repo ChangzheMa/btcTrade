@@ -1,9 +1,17 @@
-import { listenAccount, listenBookDepth, sendLimitMakerOrder } from './api.js';
+import { cancelOrdersByIds, listenAccount, listenBookDepth, sendLimitMakerOrder } from './api.js';
 import { localCache } from './cache.js';
-import { ORDER_VOLUME_MAP, PRICE_GAP_LOWER_LIMIT, UN_FILL_ORDER_WAIT_SECOND } from './params.js';
+import {
+    MERGE_GROUP_SIZE,
+    ORDER_VOLUME_MAP,
+    PRICE_GAP_LOWER_LIMIT,
+    PRICE_PRECISION,
+    STALE_ORDER_PRICE_GAP,
+    UN_FILL_ORDER_WAIT_SECOND
+} from './params.js';
 import { SYMBOL } from './config.js';
 import _ from 'lodash';
 import { parseSymbol } from '../../common/utils.js';
+import { SimpleSpotOrder } from './types.js';
 
 const printDepth = () => {
     const depth = localCache.getBookDepthCurrent()
@@ -60,40 +68,150 @@ const hasSufficientBalance = (symbol: string, buyPrice: number, sellPrice: numbe
     return true;
 }
 
-const strategyTrade = () => {
+/**
+ * 合并离当前市场价过远的过期订单
+ * - 按绝对价差判断
+ * - 按价格排序后每 10 个为一组
+ * - 新价格为组内的加权平均价 (VWAP)，新数量为组内数量之和
+ * @param orders 当前所有挂单
+ * @param midPrice 当前的市场中间价
+ */
+const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) => {
+    console.log(`当前挂单数量过多 (${orders.length})，开始按新逻辑合并过期订单...`);
+    const priceGapThreshold = STALE_ORDER_PRICE_GAP[SYMBOL];
+    const precision = PRICE_PRECISION[SYMBOL];
+
+    // 1. 筛选出所有价格差距过大的订单
+    const staleBuyOrders = orders.filter(o => o.S === 'BUY' && parseFloat(o.p) < midPrice - priceGapThreshold);
+    const staleSellOrders = orders.filter(o => o.S === 'SELL' && parseFloat(o.p) > midPrice + priceGapThreshold);
+
+    // --- 处理过期的买单 ---
+    if (staleBuyOrders.length >= MERGE_GROUP_SIZE) {
+        // 2. 按价格从高到低排序
+        staleBuyOrders.sort((a, b) => parseFloat(b.p) - parseFloat(a.p));
+        // 3. 每 10 个为一组
+        const buyChunks = _.chunk(staleBuyOrders, MERGE_GROUP_SIZE);
+
+        for (const chunk of buyChunks) {
+            if (chunk.length < MERGE_GROUP_SIZE) continue; // 只处理满 10 个的组
+
+            // 4. 计算加权平均价 (VWAP) 和总数量
+            let totalRemainingBaseQty = 0; // 剩余基础资产数量 (e.g., BTC)
+            let vwapNumerator = 0;         // VWAP 的分子: sum(price * remaining_qty)
+
+            for (const order of chunk) {
+                const price = parseFloat(order.p);
+                const originalQty = parseFloat(order.q);
+                const filledQty = parseFloat(order.z);
+                const remainingQty = originalQty - filledQty;
+
+                totalRemainingBaseQty += remainingQty;
+                vwapNumerator += price * remainingQty;
+            }
+
+            if (totalRemainingBaseQty <= 0) continue;
+
+            const vwap = vwapNumerator / totalRemainingBaseQty;
+            const mergedPrice = _.round(vwap, precision);
+            const mergedQuoteQty = totalRemainingBaseQty * mergedPrice; // 换算回计价资产数量
+
+            // 5. 执行操作：批量撤单 + 新挂单
+            try {
+                const orderIdsToCancel = chunk.map(o => o.i);
+                console.log(`准备合并 ${chunk.length} 笔买单, 新价格(VWAP): ${mergedPrice}, 新计价数量: ${mergedQuoteQty}`);
+                await cancelOrdersByIds(SYMBOL, orderIdsToCancel);
+                console.log(`成功撤销 ${orderIdsToCancel.length} 笔旧买单。`);
+                await sendLimitMakerOrder(mergedPrice, mergedQuoteQty, 'BUY');
+                console.log(`已挂出新的合并买单 @ ${mergedPrice}`);
+
+            } catch (error) {
+                console.error("合并买单时出错:", error);
+            }
+        }
+    }
+
+    // --- 处理过期的卖单 (逻辑完全相同) ---
+    if (staleSellOrders.length >= MERGE_GROUP_SIZE) {
+        // 2. 按价格从低到高排序
+        staleSellOrders.sort((a, b) => parseFloat(a.p) - parseFloat(b.p));
+        // 3. 每 10 个为一组
+        const sellChunks = _.chunk(staleSellOrders, MERGE_GROUP_SIZE);
+
+        for (const chunk of sellChunks) {
+            if (chunk.length < MERGE_GROUP_SIZE) continue;
+
+            let totalRemainingBaseQty = 0;
+            let vwapNumerator = 0;
+
+            for (const order of chunk) {
+                const price = parseFloat(order.p);
+                const remainingQty = parseFloat(order.q) - parseFloat(order.z);
+                totalRemainingBaseQty += remainingQty;
+                vwapNumerator += price * remainingQty;
+            }
+
+            if (totalRemainingBaseQty <= 0) continue;
+
+            const vwap = vwapNumerator / totalRemainingBaseQty;
+            const mergedPrice = _.round(vwap, precision);
+            const mergedQuoteQty = totalRemainingBaseQty * mergedPrice;
+
+            try {
+                const orderIdsToCancel = chunk.map(o => o.i);
+                console.log(`准备合并 ${chunk.length} 笔卖单, 新价格(VWAP): ${mergedPrice}, 新计价数量: ${mergedQuoteQty}`);
+                await cancelOrdersByIds(SYMBOL, orderIdsToCancel);
+                console.log(`成功撤销 ${orderIdsToCancel.length} 笔旧卖单。`);
+                await sendLimitMakerOrder(mergedPrice, mergedQuoteQty, 'SELL');
+                console.log(`已挂出新的合并卖单 @ ${mergedPrice}`);
+
+            } catch (error) {
+                console.error("合并卖单时出错:", error);
+            }
+        }
+    }
+};
+
+const strategyTrade = async () => {
+    const depth = localCache.getBookDepthCurrent();
+    if (!depth) return;
+
+    const bestBid = parseFloat(depth.bids[0][0]);
+    const bestAsk = parseFloat(depth.asks[0][0]);
+    if (!bestBid || !bestAsk) return;
+
+    const mid = (bestAsk + bestBid) / 2
+
     const orders = localCache.getOpenOrders()
+    if (orders && orders.length > 200) {
+        await mergeExpiredOrders(orders, mid);
+        return; // 合并后直接返回，等待下一轮
+    }
+
     const activeOrders = orders.filter(o => o.O > new Date().valueOf() - UN_FILL_ORDER_WAIT_SECOND[SYMBOL] * 1000)
     if (activeOrders.length > 0) {
         // console.log(`order exists, return`)
         return
     }
-    const depth = localCache.getBookDepthCurrent()
-    if (!depth) {
-        // console.log(`order book is null, return`)
-        return
-    }
-    let bestBid = parseFloat(depth.bids[0][0])
-    let bestAsk = parseFloat(depth.asks[0][0])
-    if (!bestBid || !bestAsk) {
-        // console.log(`missing best price, return`)
-        return
-    }
 
+    let askPrice;
+    let bidPrice;
     // 限制一下最小价差
     const priceGapLowerLimit = PRICE_GAP_LOWER_LIMIT[SYMBOL]
     if (bestAsk - bestBid < priceGapLowerLimit) {
-        const mid = (bestAsk + bestBid) / 2
-        bestAsk = _.round(mid + priceGapLowerLimit / 2, 2)
-        bestBid = _.round(mid - priceGapLowerLimit / 2, 2)
+        askPrice = _.round(mid + priceGapLowerLimit / 2, 2)
+        bidPrice = _.round(mid - priceGapLowerLimit / 2, 2)
+    } else {
+        askPrice = bestAsk;
+        bidPrice = bestBid;
     }
 
     const volume = ORDER_VOLUME_MAP[SYMBOL]
-    if (!hasSufficientBalance(SYMBOL, bestBid, bestAsk, volume)) {
+    if (!hasSufficientBalance(SYMBOL, bidPrice, askPrice, volume)) {
         // 如果余额不足，函数会打印原因并返回 false，我们在这里直接退出
         return;
     }
-    sendLimitMakerOrder(bestBid, volume, 'BUY').then()
-    sendLimitMakerOrder(bestAsk, volume, 'SELL').then()
+    sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
+    sendLimitMakerOrder(askPrice, volume, 'SELL').then()
 }
 
 listenBookDepth(strategyTrade).then();
