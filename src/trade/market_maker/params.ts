@@ -17,7 +17,7 @@ export const ORDER_VOLUME_MAP: {[k: string]: number} = {
 }
 
 // 定义“过期”订单的绝对价差阈值
-export const STALE_ORDER_PRICE_GAP = {
+export const STALE_ORDER_PRICE_GAP: {[k: string]: number}  = {
     'BTCFDUSD': 100, // 如果订单价格与中间价的差距超过 500 FDUSD，则视为过期
     'BNBFDUSD': 1
 }
@@ -26,7 +26,7 @@ export const STALE_ORDER_PRICE_GAP = {
 export const MERGE_GROUP_SIZE = 10;
 
 // 定义价格精度（小数点位数），用于 VWAP 计算结果的取整
-export const PRICE_PRECISION = {
+export const PRICE_PRECISION: {[k: string]: number}  = {
     'BTCFDUSD': 2,
     'BNBFDUSD': 2
 }
