@@ -17,7 +17,7 @@ export const ORDER_VOLUME_MAP: {[k: string]: number} = {
 
 // 定义“过期”订单的绝对价差阈值
 export const STALE_ORDER_PRICE_GAP = {
-    'BTCFDUSD': 500 // 如果订单价格与中间价的差距超过 500 FDUSD，则视为过期
+    'BTCFDUSD': 100 // 如果订单价格与中间价的差距超过 500 FDUSD，则视为过期
 }
 
 // 定义合并订单的分组大小
