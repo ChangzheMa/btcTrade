@@ -1,5 +1,6 @@
-export const SYMBOL = 'BTCFDUSD'
+export const SYMBOL = process.env.SYMBOL
 
 export const QUANTITY_PRECISION_MAP = {
-    [SYMBOL]: 5
+    'BTCFDUSD': 5,
+    'BNBFDUSD': 3
 }
