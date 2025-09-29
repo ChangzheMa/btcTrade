@@ -140,17 +140,20 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
 
             const orderQuoteVolume = remainingBaseQty * price;
 
-            // 如果当前 chunk 非空，且加入此订单会超出最大值
-            if (currentChunk.length > 0 && currentChunkVolume + orderQuoteVolume > maxMergeVolume) {
-                // 检查当前 chunk 是否满足最小值，满足则处理
+            // 如果加入此订单将超出最大值
+            if (currentChunkVolume + orderQuoteVolume > maxMergeVolume) {
+                // 如果当前组已满足最小合并额，则先处理当前组
                 if (currentChunkVolume >= minMergeVolume) {
                     await processChunk(currentChunk, 'BUY');
+                    // 用当前订单开启一个新组
+                    currentChunk = [order];
+                    currentChunkVolume = orderQuoteVolume;
+                } else {
+                    // 否则（当前组太小，此订单又太大），则跳过此订单，继续为当前组寻找更合适的订单
+                    continue;
                 }
-                // 重置 chunk，并将当前订单作为新 chunk 的第一个
-                currentChunk = [order];
-                currentChunkVolume = orderQuoteVolume;
             } else {
-                // 加入当前 chunk
+                // 如果未超出最大值，则将订单加入当前组
                 currentChunk.push(order);
                 currentChunkVolume += orderQuoteVolume;
             }
@@ -162,7 +165,7 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
         }
     }
 
-    // --- 处理过期的卖单 (逻辑与买单类似) ---
+    // --- 处理过期的卖单 (逻辑与买单完全相同) ---
     if (staleSellOrders.length > 0) {
         // 按价格从低到高排序 (优先合并价格更优的)
         staleSellOrders.sort((a, b) => parseFloat(a.p) - parseFloat(b.p));
@@ -177,13 +180,20 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
 
             const orderQuoteVolume = remainingBaseQty * price;
 
-            if (currentChunk.length > 0 && currentChunkVolume + orderQuoteVolume > maxMergeVolume) {
+            // 如果加入此订单将超出最大值
+            if (currentChunkVolume + orderQuoteVolume > maxMergeVolume) {
+                // 如果当前组已满足最小合并额，则先处理当前组
                 if (currentChunkVolume >= minMergeVolume) {
                     await processChunk(currentChunk, 'SELL');
+                    // 用当前订单开启一个新组
+                    currentChunk = [order];
+                    currentChunkVolume = orderQuoteVolume;
+                } else {
+                    // 否则（当前组太小，此订单又太大），则跳过此订单，继续为当前组寻找更合适的订单
+                    continue;
                 }
-                currentChunk = [order];
-                currentChunkVolume = orderQuoteVolume;
             } else {
+                // 如果未超出最大值，则将订单加入当前组
                 currentChunk.push(order);
                 currentChunkVolume += orderQuoteVolume;
             }
