@@ -1,7 +1,6 @@
 import { cancelOrdersByIds, listenAccount, listenBookDepth, sendLimitMakerOrder } from './api.js';
 import { localCache } from './cache.js';
 import {
-    MERGE_GROUP_SIZE,
     ORDER_VOLUME_MAP,
     PRICE_GAP_LOWER_LIMIT,
     PRICE_PRECISION,
@@ -71,7 +70,7 @@ const hasSufficientBalance = (symbol: string, buyPrice: number, sellPrice: numbe
 /**
  * 合并离当前市场价过远的过期订单
  * - 按绝对价差判断
- * - 按价格排序后每 10 个为一组
+ * - 动态成组，确保合并后的订单总额在基础量的 10~30 倍之间
  * - 新价格为组内的加权平均价 (VWAP)，新数量为组内数量之和
  * @param orders 当前所有挂单
  * @param midPrice 当前的市场中间价
@@ -80,93 +79,119 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
     console.log(`当前挂单数量过多 (${orders.length})，开始按新逻辑合并过期订单...`);
     const priceGapThreshold = STALE_ORDER_PRICE_GAP[SYMBOL];
     const precision = PRICE_PRECISION[SYMBOL];
+    const baseVolume = ORDER_VOLUME_MAP[SYMBOL];
+    const minMergeVolume = 10 * baseVolume;
+    const maxMergeVolume = 30 * baseVolume;
 
     // 1. 筛选出所有价格差距过大的订单
     const staleBuyOrders = orders.filter(o => o.S === 'BUY' && parseFloat(o.p) < midPrice - priceGapThreshold);
     const staleSellOrders = orders.filter(o => o.S === 'SELL' && parseFloat(o.p) > midPrice + priceGapThreshold);
 
+    // --- 内部函数：处理一个订单分组的撤单和下单逻辑 ---
+    const processChunk = async (chunk: SimpleSpotOrder[], side: 'BUY' | 'SELL') => {
+        if (chunk.length === 0) return;
+
+        // 计算加权平均价 (VWAP) 和总计价数量
+        let totalRemainingBaseQty = 0;
+        let vwapNumerator = 0; // 该值即为合并后订单的总计价金额
+
+        for (const order of chunk) {
+            const price = parseFloat(order.p);
+            const remainingQty = parseFloat(order.q) - parseFloat(order.z);
+            if (remainingQty <= 0) continue;
+
+            totalRemainingBaseQty += remainingQty;
+            vwapNumerator += price * remainingQty;
+        }
+
+        if (totalRemainingBaseQty <= 0) return;
+
+        const vwap = vwapNumerator / totalRemainingBaseQty;
+        const mergedPrice = _.round(vwap, precision);
+        const mergedQuoteQty = vwapNumerator;
+
+        // 执行操作：批量撤单 + 新挂单
+        try {
+            const orderIdsToCancel = chunk.map(o => o.i);
+            const sideText = side === 'BUY' ? '买' : '卖';
+            console.log(`准备合并 ${chunk.length} 笔${sideText}单, 新价格(VWAP): ${mergedPrice.toFixed(precision)}, 新计价数量: ${mergedQuoteQty.toFixed(precision)}`);
+            await cancelOrdersByIds(SYMBOL, orderIdsToCancel);
+            console.log(`成功撤销 ${orderIdsToCancel.length} 笔旧${sideText}单。`);
+            await sendLimitMakerOrder(mergedPrice, mergedQuoteQty, side);
+            console.log(`已挂出新的合并${sideText}单 @ ${mergedPrice.toFixed(precision)}`);
+
+        } catch (error) {
+            console.error(`合并${side === 'BUY' ? '买' : '卖'}单时出错:`, error);
+        }
+    };
+
     // --- 处理过期的买单 ---
-    if (staleBuyOrders.length >= MERGE_GROUP_SIZE) {
-        // 2. 按价格从高到低排序
+    if (staleBuyOrders.length > 0) {
+        // 按价格从高到低排序 (优先合并价格更优的)
         staleBuyOrders.sort((a, b) => parseFloat(b.p) - parseFloat(a.p));
-        // 3. 每 10 个为一组
-        const buyChunks = _.chunk(staleBuyOrders, MERGE_GROUP_SIZE);
 
-        for (const chunk of buyChunks) {
-            if (chunk.length < MERGE_GROUP_SIZE) continue; // 只处理满 10 个的组
+        let currentChunk: SimpleSpotOrder[] = [];
+        let currentChunkVolume = 0;
 
-            // 4. 计算加权平均价 (VWAP) 和总数量
-            let totalRemainingBaseQty = 0; // 剩余基础资产数量 (e.g., BTC)
-            let vwapNumerator = 0;         // VWAP 的分子: sum(price * remaining_qty)
+        for (const order of staleBuyOrders) {
+            const price = parseFloat(order.p);
+            const remainingBaseQty = parseFloat(order.q) - parseFloat(order.z);
+            if (remainingBaseQty <= 0) continue;
 
-            for (const order of chunk) {
-                const price = parseFloat(order.p);
-                const originalQty = parseFloat(order.q);
-                const filledQty = parseFloat(order.z);
-                const remainingQty = originalQty - filledQty;
+            const orderQuoteVolume = remainingBaseQty * price;
 
-                totalRemainingBaseQty += remainingQty;
-                vwapNumerator += price * remainingQty;
+            // 如果当前 chunk 非空，且加入此订单会超出最大值
+            if (currentChunk.length > 0 && currentChunkVolume + orderQuoteVolume > maxMergeVolume) {
+                // 检查当前 chunk 是否满足最小值，满足则处理
+                if (currentChunkVolume >= minMergeVolume) {
+                    await processChunk(currentChunk, 'BUY');
+                }
+                // 重置 chunk，并将当前订单作为新 chunk 的第一个
+                currentChunk = [order];
+                currentChunkVolume = orderQuoteVolume;
+            } else {
+                // 加入当前 chunk
+                currentChunk.push(order);
+                currentChunkVolume += orderQuoteVolume;
             }
+        }
 
-            if (totalRemainingBaseQty <= 0) continue;
-
-            const vwap = vwapNumerator / totalRemainingBaseQty;
-            const mergedPrice = _.round(vwap, precision);
-            const mergedQuoteQty = totalRemainingBaseQty * mergedPrice; // 换算回计价资产数量
-
-            // 5. 执行操作：批量撤单 + 新挂单
-            try {
-                const orderIdsToCancel = chunk.map(o => o.i);
-                console.log(`准备合并 ${chunk.length} 笔买单, 新价格(VWAP): ${mergedPrice}, 新计价数量: ${mergedQuoteQty}`);
-                await cancelOrdersByIds(SYMBOL, orderIdsToCancel);
-                console.log(`成功撤销 ${orderIdsToCancel.length} 笔旧买单。`);
-                await sendLimitMakerOrder(mergedPrice, mergedQuoteQty, 'BUY');
-                console.log(`已挂出新的合并买单 @ ${mergedPrice}`);
-
-            } catch (error) {
-                console.error("合并买单时出错:", error);
-            }
+        // 处理循环结束后剩余的最后一个 chunk
+        if (currentChunk.length > 0 && currentChunkVolume >= minMergeVolume) {
+            await processChunk(currentChunk, 'BUY');
         }
     }
 
-    // --- 处理过期的卖单 (逻辑完全相同) ---
-    if (staleSellOrders.length >= MERGE_GROUP_SIZE) {
-        // 2. 按价格从低到高排序
+    // --- 处理过期的卖单 (逻辑与买单类似) ---
+    if (staleSellOrders.length > 0) {
+        // 按价格从低到高排序 (优先合并价格更优的)
         staleSellOrders.sort((a, b) => parseFloat(a.p) - parseFloat(b.p));
-        // 3. 每 10 个为一组
-        const sellChunks = _.chunk(staleSellOrders, MERGE_GROUP_SIZE);
 
-        for (const chunk of sellChunks) {
-            if (chunk.length < MERGE_GROUP_SIZE) continue;
+        let currentChunk: SimpleSpotOrder[] = [];
+        let currentChunkVolume = 0;
 
-            let totalRemainingBaseQty = 0;
-            let vwapNumerator = 0;
+        for (const order of staleSellOrders) {
+            const price = parseFloat(order.p);
+            const remainingBaseQty = parseFloat(order.q) - parseFloat(order.z);
+            if (remainingBaseQty <= 0) continue;
 
-            for (const order of chunk) {
-                const price = parseFloat(order.p);
-                const remainingQty = parseFloat(order.q) - parseFloat(order.z);
-                totalRemainingBaseQty += remainingQty;
-                vwapNumerator += price * remainingQty;
+            const orderQuoteVolume = remainingBaseQty * price;
+
+            if (currentChunk.length > 0 && currentChunkVolume + orderQuoteVolume > maxMergeVolume) {
+                if (currentChunkVolume >= minMergeVolume) {
+                    await processChunk(currentChunk, 'SELL');
+                }
+                currentChunk = [order];
+                currentChunkVolume = orderQuoteVolume;
+            } else {
+                currentChunk.push(order);
+                currentChunkVolume += orderQuoteVolume;
             }
+        }
 
-            if (totalRemainingBaseQty <= 0) continue;
-
-            const vwap = vwapNumerator / totalRemainingBaseQty;
-            const mergedPrice = _.round(vwap, precision);
-            const mergedQuoteQty = totalRemainingBaseQty * mergedPrice;
-
-            try {
-                const orderIdsToCancel = chunk.map(o => o.i);
-                console.log(`准备合并 ${chunk.length} 笔卖单, 新价格(VWAP): ${mergedPrice}, 新计价数量: ${mergedQuoteQty}`);
-                await cancelOrdersByIds(SYMBOL, orderIdsToCancel);
-                console.log(`成功撤销 ${orderIdsToCancel.length} 笔旧卖单。`);
-                await sendLimitMakerOrder(mergedPrice, mergedQuoteQty, 'SELL');
-                console.log(`已挂出新的合并卖单 @ ${mergedPrice}`);
-
-            } catch (error) {
-                console.error("合并卖单时出错:", error);
-            }
+        // 处理循环结束后剩余的最后一个 chunk
+        if (currentChunk.length > 0 && currentChunkVolume >= minMergeVolume) {
+            await processChunk(currentChunk, 'SELL');
         }
     }
 };
