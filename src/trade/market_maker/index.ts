@@ -217,7 +217,7 @@ const strategyTrade = async () => {
     const mid = (bestAsk + bestBid) / 2
 
     const orders = localCache.getOpenOrders()
-    if (orders && orders.length > 200) {
+    if (orders && orders.length > 150) {
         await mergeExpiredOrders(orders, mid);
         return; // 合并后直接返回，等待下一轮
     }
