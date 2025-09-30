@@ -23,21 +23,21 @@ export const listenTrades = async (symbols: string[]) => {
 
     console.log(`正在连接并订阅以下成交信息流: ${streams.join(', ')}`);
 
-    try {
-        const connection = await client.websocketStreams.connect({ streams });
-
-        connection.on('message', (data) => {
-            const message = JSON.parse(data.toString());
-
-            // 检查是否是有效的成交事件
-            if (message.e === 'trade' && message.s) {
-                marketWatchCache.addTrade(message as TradeEvent);
-            }
-        });
-
-        console.log("成功订阅所有成交信息流。");
-
-    } catch (error) {
-        console.error('订阅成交信息流时出错:', error);
-    }
+    // try {
+    //     const connection = await client.websocketStreams.connect({ streams });
+    //
+    //     connection.on('message', (data) => {
+    //         const message = JSON.parse(data.toString());
+    //
+    //         // 检查是否是有效的成交事件
+    //         if (message.e === 'trade' && message.s) {
+    //             marketWatchCache.addTrade(message as TradeEvent);
+    //         }
+    //     });
+    //
+    //     console.log("成功订阅所有成交信息流。");
+    //
+    // } catch (error) {
+    //     console.error('订阅成交信息流时出错:', error);
+    // }
 };
