@@ -12,6 +12,7 @@ import { SYMBOL } from './config.js';
 import _ from 'lodash';
 import { parseSymbol } from '../../common/utils.js';
 import { SimpleSpotOrder } from './types.js';
+import { balanceChecker } from './helper/balance_checker.js';
 
 const printDepth = () => {
     const depth = localCache.getBookDepthCurrent()
@@ -27,11 +28,19 @@ const printOrders = () => {
     }
 }
 
-// setInterval(() => {
-//     console.log('account position: ', localCache.getAccountPosition())
-//     printDepth()
-//     printOrders()
-// }, 1000)
+const printBalanceRatios = () => {
+    const ratios = balanceChecker.checkBalanceRatio(SYMBOL);
+    if (ratios) {
+        console.log('Balance Ratios:', JSON.stringify(ratios, null, 2));
+    }
+}
+
+setInterval(() => {
+    // console.log('account position: ', localCache.getAccountPosition())
+    // printDepth()
+    // printOrders()
+    printBalanceRatios()
+}, 1000)
 
 /**
  * 检查账户余额是否足够同时下买单和卖单
@@ -210,6 +219,7 @@ const strategyTrade = async () => {
         // 如果余额不足，函数会打印原因并返回 false，我们在这里直接退出
         return;
     }
+
     sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
     sendLimitMakerOrder(askPrice, volume, 'SELL').then()
 }
