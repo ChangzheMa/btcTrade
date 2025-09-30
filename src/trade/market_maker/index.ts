@@ -257,6 +257,7 @@ const strategyTrade = async () => {
     }
 
     const ratios = balanceChecker.checkBalanceRatio(SYMBOL);
+    console.log(`time used: ${new Date().valueOf() - start.valueOf()}`)
     if (ratios && ratios[BASE_COIN].balanceRatio > 0.5) {
         sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
         sendLimitMakerOrder(askPrice, volume, 'SELL').then()
@@ -264,8 +265,6 @@ const strategyTrade = async () => {
         sendLimitMakerOrder(askPrice, volume, 'SELL').then()
         sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
     }
-
-    console.log(`time used: ${new Date().valueOf() - start.valueOf()}`)
 }
 
 listenBookDepth(strategyTrade).then();
