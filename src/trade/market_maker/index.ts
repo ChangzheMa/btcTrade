@@ -216,7 +216,8 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
 };
 
 const strategyTrade = async () => {
-    const start = new Date();
+    const start = process.hrtime.bigint();
+
     const depth = localCache.getBookDepthCurrent();
     if (!depth) return;
 
@@ -255,9 +256,10 @@ const strategyTrade = async () => {
         // 如果余额不足，函数会打印原因并返回 false，我们在这里直接退出
         return;
     }
+    console.log(`time used 1: ${process.hrtime.bigint() - start} nano`)
 
     const ratios = balanceChecker.checkBalanceRatio(SYMBOL);
-    console.log(`time used: ${new Date().valueOf() - start.valueOf()}`)
+    console.log(`time used 2: ${process.hrtime.bigint() - start} nano`)
     if (ratios && ratios[BASE_COIN].balanceRatio > 0.5) {
         sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
         sendLimitMakerOrder(askPrice, volume, 'SELL').then()
