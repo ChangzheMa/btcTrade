@@ -6,7 +6,8 @@
     "restart": "pm2 restart BinanceApp",
     "reload": "npm run build && pm2 reload BinanceApp",
     "logs": "pm2 logs BinanceApp",
-    "delete": "pm2 delete BinanceApp"
+    "delete": "pm2 delete BinanceApp",
+    "start:watch": "node dist/trade/market_watch/index.js"
   },
   "dependencies": {
     "@binance/connector": "^3.4.0",
