@@ -34,12 +34,15 @@ const printBalanceRatios = () => {
     }
 }
 
-// setInterval(() => {
-//     console.log('account position: ', localCache.getAccountPosition())
-//     printDepth()
-//     printOrders()
-//     printBalanceRatios()
-// }, 1000)
+let balanceRatio: any;
+
+setInterval(() => {
+    // console.log('account position: ', localCache.getAccountPosition())
+    // printDepth()
+    // printOrders()
+    // printBalanceRatios()
+    balanceRatio = balanceChecker.checkBalanceRatio(SYMBOL);
+}, 1000)
 
 /**
  * 检查账户余额是否足够同时下买单和卖单
@@ -257,10 +260,7 @@ const strategyTrade = async () => {
         return;
     }
     console.log(`time used 1: ${process.hrtime.bigint() - start} nano`)
-
-    const ratios = balanceChecker.checkBalanceRatio(SYMBOL);
-    console.log(`time used 2: ${process.hrtime.bigint() - start} nano`)
-    if (ratios && ratios[BASE_COIN].balanceRatio > 0.5) {
+    if (balanceRatio && balanceRatio[BASE_COIN].balanceRatio > 0.5) {
         sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
         sendLimitMakerOrder(askPrice, volume, 'SELL').then()
     } else {
