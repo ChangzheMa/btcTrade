@@ -7,7 +7,7 @@ import {
     STALE_ORDER_PRICE_GAP,
     UN_FILL_ORDER_WAIT_SECOND
 } from './params.js';
-import { SYMBOL } from './config.js';
+import { BASE_COIN, SYMBOL } from './config.js';
 import _ from 'lodash';
 import { parseSymbol } from '../../common/utils.js';
 import { SimpleSpotOrder } from './types.js';
@@ -34,12 +34,12 @@ const printBalanceRatios = () => {
     }
 }
 
-setInterval(() => {
-    // console.log('account position: ', localCache.getAccountPosition())
-    // printDepth()
-    // printOrders()
-    printBalanceRatios()
-}, 1000)
+// setInterval(() => {
+//     console.log('account position: ', localCache.getAccountPosition())
+//     printDepth()
+//     printOrders()
+//     printBalanceRatios()
+// }, 1000)
 
 /**
  * 检查账户余额是否足够同时下买单和卖单
@@ -216,6 +216,7 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
 };
 
 const strategyTrade = async () => {
+    const start = new Date();
     const depth = localCache.getBookDepthCurrent();
     if (!depth) return;
 
@@ -255,8 +256,16 @@ const strategyTrade = async () => {
         return;
     }
 
-    sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
-    sendLimitMakerOrder(askPrice, volume, 'SELL').then()
+    const ratios = balanceChecker.checkBalanceRatio(SYMBOL);
+    if (ratios && ratios[BASE_COIN].balanceRatio > 0.5) {
+        sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
+        sendLimitMakerOrder(askPrice, volume, 'SELL').then()
+    } else {
+        sendLimitMakerOrder(askPrice, volume, 'SELL').then()
+        sendLimitMakerOrder(bidPrice, volume, 'BUY').then()
+    }
+
+    console.log(`time used: ${new Date().valueOf() - start.valueOf()}`)
 }
 
 listenBookDepth(strategyTrade).then();
