@@ -5,3 +5,9 @@ export const QUANTITY_PRECISION_MAP: {[k: string]: number}  = {
     'BTCFDUSD': 5,
     'BNBFDUSD': 3
 }
+
+export const PRICE_PRECISION_MAP: {[k: string]: number}  = {
+    'BTCFDUSD': 2,
+    'BNBFDUSD': 1
+}
+

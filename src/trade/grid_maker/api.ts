@@ -5,7 +5,7 @@ import {
     SPOT_WS_STREAMS_PROD_URL,
     SpotWebsocketAPI
 } from '@binance/spot';
-import { QUANTITY_PRECISION_MAP, SYMBOL } from './config.js'
+import { PRICE_PRECISION_MAP, QUANTITY_PRECISION_MAP, SYMBOL } from './config.js'
 import { localCache } from './cache.js';
 import {
     Balance,
@@ -164,7 +164,7 @@ export const sendLimitMakerOrder = async (price: number, volume: number, buyOrSe
         symbol: SYMBOL,
         side: buyOrSell,
         type: SpotWebsocketAPI.OrderPlaceTypeEnum.LIMIT_MAKER,
-        price: price,
+        price: _.round(price, PRICE_PRECISION_MAP[SYMBOL]),
         quantity: quantity
     });
     console.log(`sendLimitMakerOrder: ${(buyOrSell + ' ').slice(0, 4)}, p ${price}, v ${volume} (q ${quantity})`)

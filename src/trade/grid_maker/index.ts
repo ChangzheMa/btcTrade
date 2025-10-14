@@ -274,11 +274,14 @@ const strategyTrade = async () => {
 const startGridTrade = async () => {
     console.log(`startGridTrade ...`)
 
-    await cancelAllOrders(SYMBOL)
+    if (localCache.getOpenOrders().length > 0) {
+        await cancelAllOrders(SYMBOL)
+    }
 
     const [bestAsk, bestBid] = localCache.getBestAskBid()
     if (bestAsk <= 0 || bestBid <= 0) {
-        setTimeout(startGridTrade, 3000)
+        console.log(`基本数据未初始化完毕，1000ms后重试...`)
+        setTimeout(startGridTrade, 1000)
         return
     }
 
@@ -297,4 +300,4 @@ const gridTrade = async (data: ExecutionReportEvent) => {
 listenAccount(gridTrade).then();
 listenBookDepth().then();
 
-setTimeout(startGridTrade, 3000);
+setTimeout(startGridTrade, 1000);
