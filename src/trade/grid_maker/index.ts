@@ -1,4 +1,10 @@
-import { cancelOrdersByIds, listenAccount, listenBookDepth, sendLimitMakerOrder } from './api.js';
+import {
+    cancelAllOrders,
+    cancelOrdersByIds,
+    listenAccount,
+    listenBookDepth,
+    sendLimitMakerOrder
+} from './api.js';
 import { localCache } from './cache.js';
 import {
     ORDER_VOLUME_MAP,
@@ -10,7 +16,7 @@ import {
 import { BASE_COIN, SYMBOL } from './config.js';
 import _ from 'lodash';
 import { parseSymbol } from '../../common/utils.js';
-import { SimpleSpotOrder } from './types.js';
+import { ExecutionReportEvent, SimpleSpotOrder } from './types.js';
 import { balanceChecker } from './helper/balance_checker.js';
 
 const printDepth = () => {
@@ -269,5 +275,15 @@ const strategyTrade = async () => {
     }
 }
 
-listenBookDepth(strategyTrade).then();
-listenAccount().then();
+const startGridTrade = async () => {
+    await cancelAllOrders(SYMBOL)
+
+}
+
+const gridTrade = async (data: ExecutionReportEvent) => {
+    // TODO: do nothing
+}
+
+listenAccount(gridTrade).then(() => {
+    listenBookDepth().then(startGridTrade);
+});

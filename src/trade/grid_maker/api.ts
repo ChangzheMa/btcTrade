@@ -125,7 +125,7 @@ const initOpenOrders = async () => {
     }
 }
 
-export const listenAccount = async () => {
+export const listenAccount = async (callback: Function = (data: ExecutionReportEvent) => {}) => {
     const accountInitSuccess = await initAccount();
     const orderInitSuccess = await initOpenOrders();
     if (!accountInitSuccess || !orderInitSuccess) {
@@ -144,6 +144,7 @@ export const listenAccount = async () => {
                     break;
                 case 'executionReport':
                     localCache.onOrderUpdate(data as ExecutionReportEvent);
+                    callback(data as ExecutionReportEvent)
                     break;
             }
         });
@@ -181,4 +182,11 @@ export const cancelOrdersByIds = async (symbol: string, orderIdsToCancel: number
     await Promise.allSettled(orderIdsToCancel.map(orderId => {
         return orderConnection.orderCancel({symbol, orderId})
     }))
+}
+
+export const cancelAllOrders = async (symbol: string) => {
+    if (!orderConnection) {
+        orderConnection = await client.websocketAPI.connect();
+    }
+    await orderConnection.openOrdersCancelAll({symbol})
 }
