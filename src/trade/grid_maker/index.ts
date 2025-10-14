@@ -7,6 +7,7 @@ import {
 } from './api.js';
 import { localCache } from './cache.js';
 import {
+    GRID_SIZE,
     ORDER_VOLUME_MAP,
     PRICE_GAP_LOWER_LIMIT,
     PRICE_PRECISION,
@@ -227,13 +228,8 @@ const mergeExpiredOrders = async (orders: SimpleSpotOrder[], midPrice: number) =
 const strategyTrade = async () => {
     const start = process.hrtime.bigint();
 
-    const depth = localCache.getBookDepthCurrent();
-    if (!depth) return;
-
-    const bestBid = parseFloat(depth.bids[0][0]);
-    const bestAsk = parseFloat(depth.asks[0][0]);
-    if (!bestBid || !bestAsk) return;
-
+    const [bestAsk, bestBid] = localCache.getBestAskBid()
+    if (bestAsk <= 0 || bestBid <= 0) return
     const mid = (bestAsk + bestBid) / 2
 
     const orders = localCache.getOpenOrders()
@@ -276,14 +272,29 @@ const strategyTrade = async () => {
 }
 
 const startGridTrade = async () => {
+    console.log(`startGridTrade ...`)
+
     await cancelAllOrders(SYMBOL)
 
+    const [bestAsk, bestBid] = localCache.getBestAskBid()
+    if (bestAsk <= 0 || bestBid <= 0) {
+        setTimeout(startGridTrade, 3000)
+        return
+    }
+
+    const mid = (bestAsk + bestBid) / 2
+    const gridSize = GRID_SIZE[SYMBOL]
+    const volume = ORDER_VOLUME_MAP[SYMBOL]
+
+    sendLimitMakerOrder(mid + gridSize, volume, 'SELL').then()
+    sendLimitMakerOrder(mid - gridSize, volume, 'BUY').then()
 }
 
 const gridTrade = async (data: ExecutionReportEvent) => {
     // TODO: do nothing
 }
 
-listenAccount(gridTrade).then(() => {
-    listenBookDepth().then(startGridTrade);
-});
+listenAccount(gridTrade).then();
+listenBookDepth().then();
+
+setTimeout(startGridTrade, 3000);

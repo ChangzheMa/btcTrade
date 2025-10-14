@@ -27,3 +27,8 @@ export const PRICE_PRECISION: {[k: string]: number}  = {
     'BTCFDUSD': 2,
     'BNBFDUSD': 2
 }
+
+export const GRID_SIZE: {[k: string]: number}  = {
+    'BTCFDUSD': 10,
+    'BNBFDUSD': 0.2
+}

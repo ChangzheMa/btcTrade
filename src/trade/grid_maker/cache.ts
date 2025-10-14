@@ -39,6 +39,17 @@ class LocalCache {
         return this.bookDepthCurrent
     }
 
+    getBestAskBid = (): [number, number] => {
+        const depth = this.getBookDepthCurrent();
+        if (!depth) return [-1, -1];
+
+        const bestAsk = parseFloat(depth.asks[0][0]);
+        const bestBid = parseFloat(depth.bids[0][0]);
+        if (!bestBid || !bestAsk) return [-1, -1];
+
+        return [bestAsk, bestBid]
+    }
+
     onUpdateEvent = (updateEvent: DepthUpdateEvent) => {
         this.depthUpdateEventList.push(updateEvent)
         if (this.bookDepthCurrent != null) {
