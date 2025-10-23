@@ -1,72 +1,28 @@
 import {
-    Spot,
-    SPOT_REST_API_PROD_URL,
-    SPOT_WS_API_PROD_URL,
-    SPOT_WS_STREAMS_PROD_URL,
+    MarginTrading,
+    MARGIN_TRADING_REST_API_PROD_URL,
+    MARGIN_TRADING_WS_STREAMS_PROD_URL,
     SpotWebsocketAPI
-} from '@binance/spot';
-import { PRICE_PRECISION_MAP, QUANTITY_PRECISION_MAP, SYMBOL } from './config.js'
-import { localCache } from './cache.js';
+} from '@binance/margin-trading';
+import { PRICE_PRECISION_MAP, QUANTITY_PRECISION_MAP, SYMBOL } from '../config.js'
+import { localCache } from '../cache.js';
 import {
     Balance,
-    BookDepthData,
-    DepthUpdateEvent,
     ExecutionReportEvent,
     OutboundAccountPositionEvent, SimpleSpotOrder
-} from './types.js';
+} from '../types.js';
 import _ from 'lodash';
 
 const configurationRestAPI = {
     apiKey: process.env.API_KEY ?? '',
     apiSecret: process.env.API_SECRET ?? '',
-    basePath: process.env.BASE_PATH ?? SPOT_REST_API_PROD_URL,
-};
-const configurationWebsocketAPI = {
-    apiKey: process.env.API_KEY ?? '',
-    apiSecret: process.env.API_SECRET ?? '',
-    wsURL: process.env.WS_API_URL ?? SPOT_WS_API_PROD_URL,
+    basePath: process.env.BASE_PATH ?? MARGIN_TRADING_REST_API_PROD_URL,
 };
 const configurationWebsocketStreams = {
-    wsURL: process.env.WS_STREAMS_URL ?? SPOT_WS_STREAMS_PROD_URL,
+    wsURL: process.env.WS_STREAMS_URL ?? MARGIN_TRADING_WS_STREAMS_PROD_URL,
 };
 
-const client = new Spot({ configurationRestAPI, configurationWebsocketAPI, configurationWebsocketStreams });
-
-const initBookDepth = async () => {
-    try {
-        const response = await client.restAPI.depth({
-            symbol: SYMBOL,
-        });
-        const data: BookDepthData = await response.data() as BookDepthData;
-        const initSuccess = localCache.onBookDepthInit(data)
-        if (!initSuccess) {
-            setTimeout(initBookDepth, 1000)
-        }
-    } catch (error) {
-        console.error('depth() error:', error);
-    }
-}
-
-export const listenBookDepth = async (callback: Function = () => {}) => {
-    let connection;
-    try {
-        connection = await client.websocketStreams.connect();
-        const stream = connection.diffBookDepth({
-            symbol: SYMBOL, updateSpeed: '100ms'
-        });
-        stream.on('message', (data) => {
-            if (localCache.getBookDepthCurrent() == null) {
-                initBookDepth()
-            }
-            if (!!data.E && !!data.s && !!data.U && !!data.u && !!data.a && !!data.b) {
-                localCache.onUpdateEvent(data as DepthUpdateEvent)
-            }
-            callback()
-        });
-    } catch (error) {
-        console.error(error);
-    }
-}
+const client = new MarginTrading({ configurationRestAPI, configurationWebsocketStreams });
 
 const initAccount = async () => {
     try {
@@ -138,6 +94,7 @@ export const listenAccount = async (callback: Function = (data: ExecutionReportE
         const res = await connection.userDataStreamSubscribeSignature();
         const stream = res.stream;
         stream.on('message', async (data) => {
+            console.log(`listenAccount on message: ${data}`)
             switch (data.e) {
                 case 'outboundAccountPosition':
                     localCache.onAccountPositionUpdate(data as OutboundAccountPositionEvent);

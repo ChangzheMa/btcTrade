@@ -1,10 +1,12 @@
 import {
+    listenBookDepth,
+} from './api/market_public.js';
+import {
     cancelAllOrders,
     cancelOrdersByIds,
     listenAccount,
-    listenBookDepth,
     sendLimitMakerOrder
-} from './api.js';
+} from './api/margin_trade.js';
 import { localCache } from './cache.js';
 import {
     GRID_SIZE,
