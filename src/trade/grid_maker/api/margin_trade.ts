@@ -1,3 +1,4 @@
+/*
 import {
     MarginTrading,
     MARGIN_TRADING_REST_API_PROD_URL,
@@ -147,3 +148,5 @@ export const cancelAllOrders = async (symbol: string) => {
     }
     await orderConnection.openOrdersCancelAll({symbol})
 }
+
+*/
