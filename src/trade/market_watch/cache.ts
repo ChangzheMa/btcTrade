@@ -18,6 +18,7 @@ class MarketWatchCache {
      * @param trade - 从 WebSocket 收到的成交事件
      */
     public addTrade(trade: TradeEvent): void {
+        console.log(`trade is : ${trade}`)
         const symbol = trade.s;
         if (!this.tradeCache.has(symbol)) {
             this.tradeCache.set(symbol, []);
