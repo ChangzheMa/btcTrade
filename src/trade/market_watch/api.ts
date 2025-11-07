@@ -27,8 +27,7 @@ export const listenTrades = async (symbols: string[]) => {
         const connection = await client.websocketStreams.connect({ stream: streams });
 
         connection.on('message', (data) => {
-            const message = JSON.parse(data.toString());
-            console.log(`on message: ${JSON.stringify(message)}`);
+            const message = JSON.parse(data.toString()).data;
 
             // 检查是否是有效的成交事件
             if (message.e === 'trade' && message.s) {
