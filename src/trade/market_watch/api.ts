@@ -28,7 +28,7 @@ export const listenTrades = async (symbols: string[]) => {
 
         connection.on('message', (data) => {
             const message = JSON.parse(data.toString());
-            console.log(`on message: ${message}`);
+            console.log(`on message: ${JSON.stringify(message)}`);
 
             // 检查是否是有效的成交事件
             if (message.e === 'trade' && message.s) {
