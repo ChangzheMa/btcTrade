@@ -150,3 +150,13 @@ export const cancelAllOrders = async (symbol: string) => {
 }
 
 */
+
+import { ExecutionReportEvent } from '../types.js';
+
+export const cancelAllOrders = async (symbol: string) => {}
+
+export const cancelOrdersByIds = async (symbol: string, orderIdsToCancel: number[]) => {}
+
+export const listenAccount = async (callback: Function = (data: ExecutionReportEvent) => {}) => {}
+
+export const sendLimitMakerOrder = async (price: number, volume: number, buyOrSell: 'BUY' | 'SELL') => {}
