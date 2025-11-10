@@ -46,20 +46,20 @@ function main() {
         console.log("WebSocket 监听器已启动。");
     });
 
-    // 2. 每 30 秒打印一次统计数据作为演示
-    setInterval(() => {
-        console.log(`\n\n======== [${new Date().toLocaleString()}] 市场动态报告 ========`);
-        for (const symbol of SYMBOLS_TO_WATCH) {
-            // 示例: 统计 BTCFDUSD 最近5分钟，成交额大于 20,000 FDUSD 的大单
-            if (symbol === 'BTCFDUSD') {
-                printLargeTradesSummary(symbol, 5, 20000);
-            }
-            // 示例: 统计 BNBFDUSD 最近10分钟，成交额大于 5,000 FDUSD 的大单
-            if (symbol === 'BNBFDUSD') {
-                printLargeTradesSummary(symbol, 10, 5000);
-            }
-        }
-    }, 3000);
+    // // 2. 每 30 秒打印一次统计数据作为演示
+    // setInterval(() => {
+    //     console.log(`\n\n======== [${new Date().toLocaleString()}] 市场动态报告 ========`);
+    //     for (const symbol of SYMBOLS_TO_WATCH) {
+    //         // 示例: 统计 BTCFDUSD 最近5分钟，成交额大于 20,000 FDUSD 的大单
+    //         if (symbol === 'BTCFDUSD') {
+    //             printLargeTradesSummary(symbol, 5, 20000);
+    //         }
+    //         // 示例: 统计 BNBFDUSD 最近10分钟，成交额大于 5,000 FDUSD 的大单
+    //         if (symbol === 'BNBFDUSD') {
+    //             printLargeTradesSummary(symbol, 10, 5000);
+    //         }
+    //     }
+    // }, 3000);
 }
 
 // 运行主函数
